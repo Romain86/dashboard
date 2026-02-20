@@ -1,0 +1,22 @@
+{
+    "id": "twitch",
+    "name": "Twitch",
+    "icon": "🟣",
+    "description": "Streamers que tu suis actuellement en live",
+    "version": "1.0",
+    "params": [
+        {
+            "key": "client_id",
+            "label": "Client ID",
+            "type": "text",
+            "required": true
+        },
+        {
+            "key": "client_secret",
+            "label": "Client Secret",
+            "type": "password",
+            "required": true
+        }
+    ],
+    "refresh_interval": 60
+}
