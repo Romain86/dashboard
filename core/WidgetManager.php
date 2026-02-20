@@ -34,8 +34,13 @@ class WidgetManager
 
         $configFile = $this->widgetsPath . '/' . $widgetId . '/config.json';
         $config     = json_decode(file_get_contents($configFile), true);
-        $ttl        = $config['refresh_interval'] ?? DEFAULT_CACHE_TTL;
-        $cacheKey   = 'widget_' . $widgetId;
+        $ttl      = $config['refresh_interval'] ?? DEFAULT_CACHE_TTL;
+        $cacheKey = 'widget_' . $widgetId;
+
+        // Inclure les coordonnées GPS dans la clé de cache si fournies
+        if (isset($settings['_lat'], $settings['_lon'])) {
+            $cacheKey .= '_' . round((float) $settings['_lat'], 2) . '_' . round((float) $settings['_lon'], 2);
+        }
 
         return $cache->remember($cacheKey, $ttl, function () use ($apiFile, $settings) {
             return (function (array $settings) use ($apiFile) {

@@ -12,18 +12,23 @@ const Dashboard = {
     /** Config active pour le modal settings */
     _settingsWidget: null,
 
+    /** Géolocalisation du navigateur {lat, lon} ou null */
+    _location: null,
+
     /* --------------------------------------------------
        Init
     -------------------------------------------------- */
     async init() {
         this._startClock();
 
-        try {
-            this._widgetList = await this._fetchWidgetList();
-        } catch (e) {
-            console.error('Impossible de charger la liste des widgets :', e);
-            return;
-        }
+        // Géolocalisation en parallèle du chargement de la liste
+        const [widgetList] = await Promise.all([
+            this._fetchWidgetList().catch(e => { console.error('Liste widgets :', e); return null; }),
+            this._getLocation(),
+        ]);
+
+        if (!widgetList) return;
+        this._widgetList = widgetList;
 
         const enabled = this._widgetList.filter(w => w.enabled);
 
@@ -36,6 +41,23 @@ const Dashboard = {
         await Promise.all(enabled.map(w => this._mountWidget(w)));
 
         this._bindModal();
+    },
+
+    /* --------------------------------------------------
+       Géolocalisation
+    -------------------------------------------------- */
+    _getLocation() {
+        return new Promise(resolve => {
+            if (!navigator.geolocation) return resolve();
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    this._location = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    resolve();
+                },
+                () => resolve(), // refus ou erreur : on continue sans coords
+                { timeout: 5000, maximumAge: 300000 }
+            );
+        });
     },
 
     /* --------------------------------------------------
@@ -65,7 +87,11 @@ const Dashboard = {
     },
 
     async _fetchWidgetData(widgetId) {
-        const res  = await fetch(`api/widgets.php?action=data&widget=${encodeURIComponent(widgetId)}`);
+        let url = `api/widgets.php?action=data&widget=${encodeURIComponent(widgetId)}`;
+        if (this._location) {
+            url += `&lat=${this._location.lat}&lon=${this._location.lon}`;
+        }
+        const res  = await fetch(url);
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
         return data.data;

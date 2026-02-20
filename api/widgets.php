@@ -45,7 +45,14 @@ try {
             }
 
             $settings = $db->getSettings($widgetId);
-            $data     = $manager->callWidget($widgetId, $settings, $cache);
+
+            // Transmettre la géolocalisation du navigateur si fournie
+            if (isset($_GET['lat'], $_GET['lon'])) {
+                $settings['_lat'] = (float) $_GET['lat'];
+                $settings['_lon'] = (float) $_GET['lon'];
+            }
+
+            $data = $manager->callWidget($widgetId, $settings, $cache);
 
             echo json_encode(['success' => true, 'data' => $data]);
             break;

@@ -3,16 +3,31 @@
 // $settings est injecté par WidgetManager::callWidget()
 $apiKey = $settings['api_key'] ?? null;
 $city   = $settings['city'] ?? null;
+$lat    = $settings['_lat'] ?? null;
+$lon    = $settings['_lon'] ?? null;
 
-if (!$apiKey || !$city) {
-    throw new Exception('Widget non configuré : clé API ou ville manquante');
+if (!$apiKey) {
+    throw new Exception('Widget non configuré : clé API manquante');
 }
 
-$url = sprintf(
-    'https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=fr',
-    urlencode($city),
-    urlencode($apiKey)
-);
+if ($lat !== null && $lon !== null) {
+    // Géolocalisation du navigateur
+    $url = sprintf(
+        'https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s&units=metric&lang=fr',
+        $lat,
+        $lon,
+        urlencode($apiKey)
+    );
+} elseif ($city) {
+    // Ville configurée manuellement
+    $url = sprintf(
+        'https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=fr',
+        urlencode($city),
+        urlencode($apiKey)
+    );
+} else {
+    throw new Exception('Widget non configuré : ville manquante');
+}
 
 $ctx      = stream_context_create(['http' => ['timeout' => 5]]);
 $response = @file_get_contents($url, false, $ctx);

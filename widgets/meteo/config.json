@@ -13,9 +13,9 @@
         },
         {
             "key": "city",
-            "label": "Ville",
+            "label": "Ville (optionnel si géolocalisation activée)",
             "type": "text",
-            "required": true,
+            "required": false,
             "placeholder": "Paris"
         }
     ],
