@@ -50,6 +50,16 @@ try {
             echo json_encode(['success' => true, 'data' => $data]);
             break;
 
+        // Récupérer les paramètres d'un widget
+        case 'settings-get':
+            if (!$widgetId) {
+                throw new Exception('Paramètre widget manquant');
+            }
+
+            $settings = $db->getSettings($widgetId);
+            echo json_encode(['success' => true, 'settings' => $settings]);
+            break;
+
         // Sauvegarder les paramètres d'un widget
         case 'settings':
             if (!$widgetId || $_SERVER['REQUEST_METHOD'] !== 'POST') {
