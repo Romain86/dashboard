@@ -7,6 +7,10 @@ class Database
 
     private function __construct()
     {
+        if (!is_dir(DATA_PATH)) {
+            mkdir(DATA_PATH, 0755, true);
+        }
+
         $this->pdo = new PDO('sqlite:' . DB_PATH, null, null, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

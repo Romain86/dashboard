@@ -1,0 +1,23 @@
+{
+    "id": "meteo",
+    "name": "Météo",
+    "icon": "🌤️",
+    "description": "Météo locale via OpenWeatherMap",
+    "version": "1.0",
+    "params": [
+        {
+            "key": "api_key",
+            "label": "Clé API OpenWeatherMap",
+            "type": "password",
+            "required": true
+        },
+        {
+            "key": "city",
+            "label": "Ville",
+            "type": "text",
+            "required": true,
+            "placeholder": "Paris"
+        }
+    ],
+    "refresh_interval": 600
+}
