@@ -297,6 +297,8 @@ const Dashboard = {
         e.preventDefault();
         if (!this._settingsWidget) return;
 
+        const widgetId = this._settingsWidget.id; // capturer avant que _closeModal() ne nullifie
+
         const form   = document.getElementById('settings-form');
         const inputs = form.querySelectorAll('.field-input[name]');
         const values = {};
@@ -307,12 +309,12 @@ const Dashboard = {
         btn.textContent = 'Sauvegarde…';
 
         try {
-            await this._saveSettings(this._settingsWidget.id, values);
+            await this._saveSettings(widgetId, values);
             this._closeModal();
             // Recharger le widget
-            const card      = document.getElementById(`widget-card-${this._settingsWidget.id}`);
+            const card      = document.getElementById(`widget-card-${widgetId}`);
             const contentEl = card?.querySelector('.widget-content');
-            if (contentEl) await this._renderWidgetContent(this._settingsWidget.id, contentEl);
+            if (contentEl) await this._renderWidgetContent(widgetId, contentEl);
         } catch (err) {
             alert('Erreur : ' + err.message);
         } finally {
