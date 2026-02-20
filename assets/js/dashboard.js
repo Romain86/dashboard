@@ -141,11 +141,23 @@ const Dashboard = {
                 contentEl.innerHTML = `<pre style="font-size:11px;color:var(--text-dim);overflow:auto;">${JSON.stringify(data, null, 2)}</pre>`;
             }
         } catch (err) {
-            const isSetup = err.message?.toLowerCase().includes('non configuré')
-                         || err.message?.toLowerCase().includes('api key')
-                         || err.message?.toLowerCase().includes('manquant');
+            const msg = err.message ?? '';
+            const isOAuth  = msg.toLowerCase().includes('autorisation') || msg.toLowerCase().includes('manquante');
+            const isSetup  = msg.toLowerCase().includes('non configuré')
+                          || msg.toLowerCase().includes('api key')
+                          || msg.toLowerCase().includes('manquant');
 
-            if (isSetup) {
+            if (isOAuth) {
+                // OAuth requis : bouton vers la page d'autorisation du widget
+                contentEl.innerHTML = `
+                    <div class="widget-setup">
+                        <div class="setup-icon">🔐</div>
+                        <div class="setup-msg">Connexion requise pour ce widget.</div>
+                        <a class="btn btn-sm btn-primary" href="widgets/${widgetId}/oauth.php">
+                            Connecter mon compte
+                        </a>
+                    </div>`;
+            } else if (isSetup) {
                 contentEl.innerHTML = `
                     <div class="widget-setup">
                         <div class="setup-icon">⚙️</div>
@@ -160,7 +172,7 @@ const Dashboard = {
                 contentEl.innerHTML = `
                     <div class="widget-error">
                         <div class="error-icon">⚠️</div>
-                        <div class="error-msg">${this._escHtml(err.message)}</div>
+                        <div class="error-msg">${this._escHtml(msg)}</div>
                     </div>`;
             }
         }
