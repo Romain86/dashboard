@@ -1,7 +1,7 @@
 {
     "id": "twitch",
     "name": "Twitch",
-    "icon": "🟣",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 28\" width=\"20\" height=\"20\"><path fill=\"#9147ff\" d=\"M2.149 0L.537 4.119v19.438h6.328V27h3.284l3.28-3.443h4.917l6.611-6.612V0H2.149zm20.164 13.612l-3.804 3.807h-5.936l-3.28 3.275v-3.275H4.357V2.149h17.956v11.463zM17.401 4.807H15.25v6.122h2.151V4.807zm-5.932 0H9.318v6.122h2.151V4.807z\"/></svg>",
     "description": "Streamers que tu suis actuellement en live",
     "version": "1.0",
     "params": [

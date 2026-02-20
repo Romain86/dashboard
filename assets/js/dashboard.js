@@ -184,7 +184,7 @@ const Dashboard = {
         card.id = `widget-card-${widget.id}`;
         card.innerHTML = `
             <div class="widget-header">
-                <span class="widget-icon">${this._escHtml(widget.icon ?? '🔧')}</span>
+                <span class="widget-icon">${this._renderIcon(widget.icon)}</span>
                 <span class="widget-name">${this._escHtml(widget.name)}</span>
                 <div class="widget-actions">
                     <button class="widget-btn" title="Rafraîchir" data-refresh="${widget.id}" aria-label="Rafraîchir">
@@ -249,7 +249,7 @@ const Dashboard = {
 
         this._settingsWidget = widget;
 
-        document.getElementById('modal-icon').textContent  = widget.icon ?? '🔧';
+        document.getElementById('modal-icon').innerHTML = this._renderIcon(widget.icon);
         document.getElementById('modal-title').textContent = `Paramètres — ${widget.name}`;
 
         // Récupérer les params depuis la config du widget via l'API
@@ -350,6 +350,11 @@ const Dashboard = {
     /* --------------------------------------------------
        Utils
     -------------------------------------------------- */
+    _renderIcon(icon) {
+        const i = icon ?? '🔧';
+        return i.trimStart().startsWith('<svg') ? i : this._escHtml(i);
+    },
+
     _escHtml(str) {
         return String(str ?? '')
             .replace(/&/g, '&amp;')
