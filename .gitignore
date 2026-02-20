@@ -1,0 +1,23 @@
+# Données locales
+data/dashboard.db
+data/cache/
+
+# Logs
+*.log
+
+# Clés API / fichiers secrets
+.env
+secrets.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# PHP
+vendor/
