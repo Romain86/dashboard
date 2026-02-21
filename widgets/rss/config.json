@@ -9,7 +9,7 @@
             "key": "feed_urls",
             "label": "URLs des flux (une par ligne)",
             "type": "textarea",
-            "placeholder": "https://www.lemonde.fr/rss/une.xml",
+            "placeholder": "https://hnrss.org/frontpage\nhttps://www.jw.org/fr/quoi-de-neuf/rss/WhatsNewWebArticles/feed.xml",
             "required": true
         },
         {

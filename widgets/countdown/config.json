@@ -1,0 +1,32 @@
+{
+    "id": "countdown",
+    "name": "Countdown",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#7c6af7\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"13\" r=\"8\"/><path d=\"M12 9v4l2.5 2.5\"/><path d=\"M9 2h6\"/><path d=\"M12 2v3\"/></svg>",
+    "description": "Compte à rebours vers des événements Google Calendar",
+    "version": "1.0",
+    "params": [
+        {
+            "key": "event_names",
+            "label": "Noms des événements (un par ligne, recherche dans Google Calendar)",
+            "type": "textarea",
+            "required": true,
+            "placeholder": "Vacances\nAnniversaire Marie\nConcert"
+        },
+        {
+            "key": "client_id",
+            "label": "Client ID (laisser vide si widget GCal déjà configuré)",
+            "type": "text"
+        },
+        {
+            "key": "client_secret",
+            "label": "Client Secret (laisser vide si widget GCal configuré)",
+            "type": "password"
+        },
+        {
+            "key": "refresh_token",
+            "label": "Refresh Token (laisser vide si widget GCal configuré)",
+            "type": "password"
+        }
+    ],
+    "refresh_interval": 3600
+}

@@ -1,0 +1,37 @@
+{
+    "id": "gcal",
+    "name": "Google Calendar",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"17\" rx=\"2\" fill=\"none\" stroke=\"#4285F4\" stroke-width=\"1.5\"/><line x1=\"3\" y1=\"9\" x2=\"21\" y2=\"9\" stroke=\"#4285F4\" stroke-width=\"1.5\"/><line x1=\"8\" y1=\"2\" x2=\"8\" y2=\"6\" stroke=\"#4285F4\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><line x1=\"16\" y1=\"2\" x2=\"16\" y2=\"6\" stroke=\"#4285F4\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><text x=\"12\" y=\"18\" text-anchor=\"middle\" font-size=\"7\" fill=\"#EA4335\" font-family=\"Arial\" font-weight=\"bold\">G</text></svg>",
+    "description": "Prochains événements Google Calendar avec compte à rebours",
+    "version": "1.0",
+    "params": [
+        { "key": "client_id",     "label": "Client ID (Google Cloud)",     "type": "text",     "required": true },
+        { "key": "client_secret", "label": "Client Secret (Google Cloud)", "type": "password", "required": true },
+        { "key": "refresh_token", "label": "Refresh Token (OAuth2 Playground)", "type": "password", "required": true },
+        {
+            "key": "max_events",
+            "label": "Nombre d'événements",
+            "type": "select",
+            "default": "10",
+            "options": [
+                { "value": "5",  "label": "5" },
+                { "value": "10", "label": "10" },
+                { "value": "15", "label": "15" },
+                { "value": "20", "label": "20" }
+            ]
+        },
+        {
+            "key": "days_ahead",
+            "label": "Période",
+            "type": "select",
+            "default": "30",
+            "options": [
+                { "value": "7",   "label": "7 jours" },
+                { "value": "30",  "label": "30 jours" },
+                { "value": "90",  "label": "3 mois" },
+                { "value": "365", "label": "1 an" }
+            ]
+        }
+    ],
+    "refresh_interval": 900
+}

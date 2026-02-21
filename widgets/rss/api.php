@@ -48,7 +48,6 @@ function parseFeed(string $url, $ctx): array
     if ($xml->getName() === 'feed') {
         $source = html_entity_decode(strip_tags((string)$xml->title), ENT_QUOTES, 'UTF-8');
         foreach ($xml->entry as $entry) {
-            // Trouver le lien href
             $link = '';
             foreach ($entry->link as $l) {
                 $href = (string)$l['href'];
@@ -71,7 +70,7 @@ function parseFeed(string $url, $ctx): array
 }
 
 // -------------------------------------------------------
-// Agréger tous les flux
+// Agréger tous les flux (items flat avec champ source)
 // -------------------------------------------------------
 $allItems = [];
 $errors   = [];
@@ -89,11 +88,20 @@ if (empty($allItems)) {
     throw new Exception('Aucun article récupéré. Vérifiez les URLs des flux.');
 }
 
-// Tri par date décroissante + limite
+// Tri par date décroissante — pas de limite globale (filtre côté client)
 usort($allItems, fn($a, $b) => $b['date'] <=> $a['date']);
-$allItems = array_slice($allItems, 0, $maxItems);
+
+// Extraire les sources uniques (dans l'ordre d'apparition)
+$sources = [];
+foreach ($allItems as $item) {
+    if ($item['source'] && !in_array($item['source'], $sources, true)) {
+        $sources[] = $item['source'];
+    }
+}
 
 return [
-    'items'  => $allItems,
-    'errors' => $errors,
+    'items'   => array_slice($allItems, 0, $maxItems * count($feedUrls)),
+    'sources' => $sources,
+    'max'     => $maxItems,
+    'errors'  => $errors,
 ];
