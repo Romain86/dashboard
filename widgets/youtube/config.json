@@ -1,0 +1,24 @@
+{
+    "id": "youtube",
+    "name": "YouTube",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\"><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"4\" fill=\"#FF0000\"/><polygon points=\"10,8 16,12 10,16\" fill=\"#fff\"/></svg>",
+    "description": "Dernières vidéos de vos abonnements YouTube",
+    "version": "1.0",
+    "params": [
+        { "key": "client_id", "label": "Client ID (Google Cloud)", "type": "text", "required": true },
+        { "key": "client_secret", "label": "Client Secret", "type": "password", "required": true },
+        {
+            "key": "max_videos",
+            "label": "Nombre de vidéos",
+            "type": "select",
+            "default": "12",
+            "options": [
+                { "value": "6",  "label": "6" },
+                { "value": "12", "label": "12" },
+                { "value": "18", "label": "18" },
+                { "value": "24", "label": "24" }
+            ]
+        }
+    ],
+    "refresh_interval": 600
+}

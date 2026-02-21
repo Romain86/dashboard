@@ -34,6 +34,8 @@ Dashboard modulaire personnel avec des widgets indépendants, développé en PHP
 | Countdown | Compte à rebours personnalisé | — | 1h |
 | Tablatures | Tablatures guitare | — | 1h |
 | Studio 17 | Suivi campagne JDR | Calcul auto | 1h |
+| YouTube | Dernières vidéos des abonnements | YouTube Data API (OAuth2) | 10 min |
+| Colis | Suivi de livraisons | Local + liens transporteurs | 1h |
 
 ## Prérequis
 

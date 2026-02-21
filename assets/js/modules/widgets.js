@@ -34,11 +34,11 @@ Object.assign(Dashboard, {
     },
 
     /** Charge les données et rend le contenu d'un widget. */
-    async _renderWidgetContent(widgetId, contentEl) {
+    async _renderWidgetContent(widgetId, contentEl, force = false) {
         this._showSkeleton(contentEl);
 
         try {
-            const { data, cache_ts } = await this._fetchWidgetData(widgetId);
+            const { data, cache_ts } = await this._fetchWidgetData(widgetId, force);
             const renderer = window.DashboardWidgets?.[widgetId];
 
             if (renderer && typeof renderer.render === 'function') {
@@ -113,6 +113,8 @@ Object.assign(Dashboard, {
             'tmdb':       ['rgba(1,   180, 228, 0.30)', 'rgba(1,   180, 228, 0.06)'],
             'countdown':  ['rgba(124, 106, 247, 0.30)', 'rgba(124, 106, 247, 0.06)'],
             'tablatures': ['rgba(232, 176, 75,  0.30)', 'rgba(232, 176, 75,  0.06)'],
+            'youtube':    ['rgba(255, 0,   0,   0.30)', 'rgba(255, 0,   0,   0.06)'],
+            'parcels':    ['rgba(34,  197, 94,  0.30)', 'rgba(34,  197, 94,  0.06)'],
         };
         const [accent, accentBg] = _widgetAccents[widget.id] ?? ['rgba(124, 106, 247, 0.25)', 'rgba(124, 106, 247, 0.05)'];
         card.style.setProperty('--widget-accent',    accent);
@@ -158,7 +160,7 @@ Object.assign(Dashboard, {
             const btn = e.currentTarget;
             btn.classList.add('spinning');
             const contentEl = card.querySelector('.widget-content');
-            await this._renderWidgetContent(widget.id, contentEl);
+            await this._renderWidgetContent(widget.id, contentEl, true);
             btn.classList.remove('spinning');
         });
 

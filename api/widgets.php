@@ -53,6 +53,11 @@ try {
                 $settings['_lon'] = (float) $_GET['lon'];
             }
 
+            // Force refresh : vider le cache avant l'appel
+            if (!empty($_GET['force'])) {
+                $cache->deleteByPrefix('widget_' . $widgetId);
+            }
+
             $data     = $manager->callWidget($widgetId, $settings, $cache);
             $cacheKey = $manager->getCacheKey($widgetId, $settings);
             $cacheTs  = $cache->getCachedAt($cacheKey);

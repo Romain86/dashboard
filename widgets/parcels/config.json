@@ -1,0 +1,9 @@
+{
+    "id": "parcels",
+    "name": "Colis",
+    "icon": "📦",
+    "description": "Suivi de colis avec liens directs vers les transporteurs",
+    "version": "1.1",
+    "params": [],
+    "refresh_interval": 3600
+}

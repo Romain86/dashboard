@@ -17,8 +17,9 @@ Object.assign(Dashboard, {
     },
 
     /** Récupère les données d'un widget (avec cache côté serveur). */
-    async _fetchWidgetData(widgetId) {
+    async _fetchWidgetData(widgetId, force = false) {
         let url = `api/widgets.php?action=data&widget=${encodeURIComponent(widgetId)}`;
+        if (force) url += '&force=1';
         if (this._location) {
             url += `&lat=${this._location.lat}&lon=${this._location.lon}`;
         }
