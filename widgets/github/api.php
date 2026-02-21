@@ -108,8 +108,45 @@ $repos = array_map(fn($r) => [
     'fork'        => $r['fork']              ?? false,
 ], $rawRepos);
 
+// -------------------------------------------------------
+// Calendrier de contributions (GraphQL — nécessite token)
+// -------------------------------------------------------
+$calendar = null;
+if ($token) {
+    $gqlQuery = json_encode([
+        'query' => sprintf(
+            '{ user(login: "%s") { contributionsCollection { contributionCalendar { totalContributions weeks { contributionDays { contributionCount date } } } } } }',
+            addslashes($username)
+        ),
+    ]);
+
+    $gqlCtx = stream_context_create(['http' => [
+        'method'        => 'POST',
+        'timeout'       => 8,
+        'ignore_errors' => true,
+        'header'        => implode("\r\n", array_merge($headers, [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($gqlQuery),
+        ])),
+        'content' => $gqlQuery,
+    ]]);
+
+    $gqlRaw = @file_get_contents('https://api.github.com/graphql', false, $gqlCtx);
+    if ($gqlRaw) {
+        $gqlData = json_decode($gqlRaw, true);
+        $cal     = $gqlData['data']['user']['contributionsCollection']['contributionCalendar'] ?? null;
+        if ($cal) {
+            $calendar = [
+                'total' => (int) $cal['totalContributions'],
+                'weeks' => $cal['weeks'],
+            ];
+        }
+    }
+}
+
 return [
     'events'   => $events,
     'repos'    => $repos,
     'username' => $username,
+    'calendar' => $calendar,
 ];

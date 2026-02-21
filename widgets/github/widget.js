@@ -8,12 +8,16 @@ window.DashboardWidgets.github = {
         this._injectStyles();
         container.style.overflowY = 'auto';
 
-        const { events, repos, username } = data;
+        const { events, repos, username, calendar } = data;
+        const calTab = calendar
+            ? `<button class="gh-tab ${this._view === 'calendar' ? 'gh-tab--active' : ''}" data-view="calendar">Calendrier</button>`
+            : '';
 
         container.innerHTML = `
             <div class="gh-tabs">
                 <button class="gh-tab ${this._view === 'activity' ? 'gh-tab--active' : ''}" data-view="activity">Activité</button>
                 <button class="gh-tab ${this._view === 'repos'    ? 'gh-tab--active' : ''}" data-view="repos">Dépôts</button>
+                ${calTab}
                 <a class="gh-profile" href="https://github.com/${this._esc(username)}" target="_blank" rel="noopener">@${this._esc(username)}</a>
             </div>
             <div class="gh-content"></div>`;
@@ -30,9 +34,9 @@ window.DashboardWidgets.github = {
     },
 
     _renderContent(el, data) {
-        el.innerHTML = this._view === 'repos'
-            ? this._buildRepos(data.repos)
-            : this._buildActivity(data.events);
+        if (this._view === 'repos')    { el.innerHTML = this._buildRepos(data.repos);         return; }
+        if (this._view === 'calendar') { el.innerHTML = this._buildCalendar(data.calendar);   return; }
+        el.innerHTML = this._buildActivity(data.events);
     },
 
     // ----------------------------------------------------------------
@@ -104,6 +108,53 @@ window.DashboardWidgets.github = {
             'C++':      '#f34b7d', 'C#':        '#178600', C:      '#555555',
         };
         return colors[lang] ?? '#888';
+    },
+
+    // ----------------------------------------------------------------
+    // Calendrier de contributions
+    // ----------------------------------------------------------------
+
+    _buildCalendar(calendar) {
+        if (!calendar) return '<div class="gh-empty">Token requis pour afficher le calendrier</div>';
+
+        const { total, weeks } = calendar;
+
+        const level = count => count === 0 ? 0 : count <= 3 ? 1 : count <= 9 ? 2 : count <= 19 ? 3 : 4;
+
+        // Étiquettes de mois (une par changement de mois)
+        let lastMonth = -1;
+        const monthLabels = [];
+        weeks.forEach((week, wi) => {
+            const d = week.contributionDays[0]?.date;
+            if (d) {
+                const m = new Date(d).getMonth();
+                if (m !== lastMonth) {
+                    monthLabels.push({ col: wi + 1, name: new Date(d).toLocaleDateString('fr-FR', { month: 'short' }) });
+                    lastMonth = m;
+                }
+            }
+        });
+
+        const weeksHtml = weeks.map(week => `
+            <div class="gh-cal-week">
+                ${week.contributionDays.map(day => `
+                    <div class="gh-cal-day gh-cal-l${level(day.contributionCount)}"
+                         title="${day.date} — ${day.contributionCount} contribution${day.contributionCount !== 1 ? 's' : ''}"></div>
+                `).join('')}
+            </div>`).join('');
+
+        const monthsHtml = monthLabels.map(m =>
+            `<span class="gh-cal-month" style="grid-column:${m.col}">${m.name}</span>`
+        ).join('');
+
+        return `
+            <div class="gh-cal-header">
+                <span class="gh-cal-total">${total} contributions cette année</span>
+            </div>
+            <div class="gh-cal-wrap">
+                <div class="gh-cal-months">${monthsHtml}</div>
+                <div class="gh-cal">${weeksHtml}</div>
+            </div>`;
     },
 
     // ----------------------------------------------------------------
@@ -269,6 +320,52 @@ window.DashboardWidgets.github = {
             }
             .gh-stars { font-size: 11px; color: #555560; }
             .gh-updated { font-size: 11px; color: #444450; margin-left: auto; }
+            /* Calendrier */
+            .gh-cal-header {
+                margin-bottom: 10px;
+            }
+            .gh-cal-total {
+                font-size: 12px;
+                color: #9898a6;
+                font-weight: 500;
+            }
+            .gh-cal-wrap {
+                overflow-x: auto;
+                padding-bottom: 2px;
+            }
+            .gh-cal-months {
+                display: grid;
+                grid-template-columns: repeat(53, 11px);
+                gap: 2px;
+                margin-bottom: 3px;
+            }
+            .gh-cal-month {
+                font-size: 9px;
+                color: #444450;
+                white-space: nowrap;
+                grid-row: 1;
+            }
+            .gh-cal {
+                display: flex;
+                gap: 2px;
+            }
+            .gh-cal-week {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .gh-cal-day {
+                width: 10px;
+                height: 10px;
+                border-radius: 2px;
+                flex-shrink: 0;
+            }
+            .gh-cal-l0 { background: rgba(255,255,255,0.07); }
+            .gh-cal-l1 { background: rgba(124,106,247,0.28); }
+            .gh-cal-l2 { background: rgba(124,106,247,0.52); }
+            .gh-cal-l3 { background: rgba(124,106,247,0.76); }
+            .gh-cal-l4 { background: rgba(124,106,247,1.00); }
+            .gh-cal-day:hover { opacity: 0.75; cursor: default; }
         `;
         document.head.appendChild(s);
     },
