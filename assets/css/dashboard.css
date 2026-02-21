@@ -382,6 +382,12 @@ body {
 
 .field-input::placeholder { color: var(--muted); }
 
+.field-textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
 /* ---- Dropdown custom (remplace <select> natif) ---- */
 .field-custom-select {
     position: relative;

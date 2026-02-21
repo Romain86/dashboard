@@ -371,6 +371,16 @@ const Dashboard = {
                 });
                 group.appendChild(wrap);
 
+            } else if (param.type === 'textarea') {
+                const ta = document.createElement('textarea');
+                ta.className   = 'field-input field-textarea';
+                ta.id          = `field-${param.key}`;
+                ta.name        = param.key;
+                ta.placeholder = param.placeholder ?? '';
+                ta.rows        = 4;
+                if (param.required) ta.required = true;
+                group.appendChild(ta);
+
             } else {
                 const input = document.createElement('input');
                 input.className   = 'field-input';
