@@ -78,7 +78,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
-    align-items: start;
+    align-items: stretch;
 }
 
 /* Tailles des widgets */
@@ -113,6 +113,8 @@ body {
     overflow: hidden;
     backdrop-filter: blur(8px);
     transition: border-color var(--transition), box-shadow var(--transition);
+    display: flex;
+    flex-direction: column;
 }
 
 .widget-card:hover {
@@ -235,6 +237,7 @@ body {
 .widget-content {
     padding: 16px;
     min-height: 100px;
+    flex: 1;
 }
 
 /* ---- Loading Skeleton ---- */
