@@ -643,7 +643,7 @@ if (json.success) {
 
 ## Authentification OAuth2 (oauth.php)
 
-Pour les widgets qui nécessitent une connexion utilisateur (Spotify, Twitch, Google Calendar).
+Pour les widgets qui nécessitent une connexion utilisateur (Spotify, Twitch, Google Calendar, YouTube).
 
 ### Vue d'ensemble du flux
 
@@ -803,7 +803,8 @@ if (needsRefresh($data)) {
 |----------|-------------|--------|-------------|
 | **Spotify** | `Basic` (base64 client_id:secret) | `user-read-currently-playing`, `playlist-read-private` | Refresh token stable |
 | **Twitch** | `Client-ID` header | `user:read:follows` | Stocke aussi `user_id` et `user_name` |
-| **Google** | `Basic` (base64 client_id:secret) | `calendar.readonly` | Refresh token uniquement au 1er consent (`access_type=offline`, `prompt=consent`) |
+| **Google (Calendar)** | `Basic` (base64 client_id:secret) | `calendar.readonly` | Via OAuth Playground (redirect_uri = oauthplayground) |
+| **Google (YouTube)** | POST form body | `youtube.readonly` | Via OAuth Playground, filtre Shorts < 3min |
 
 ### Clés nécessaires dans config.json
 
@@ -819,6 +820,19 @@ Pour un widget OAuth2, ajouter les paramètres `client_id` et `client_secret` :
 ```
 
 L'utilisateur les obtient en créant une application sur le portail développeur du provider (Spotify Developer Dashboard, Twitch Developer Console, Google Cloud Console).
+
+### Variante : OAuth via Google OAuth Playground
+
+Pour les widgets Google (Calendar, YouTube), le domaine `.test` n'est pas accepté comme redirect URI. La solution est d'utiliser Google OAuth Playground :
+
+1. Redirect URI dans `auth.php` et `callback.php` : `https://developers.google.com/oauthplayground`
+2. L'utilisateur va sur OAuth Playground, configure ses propres credentials, et récupère le refresh_token
+3. Le refresh_token est sauvegardé en SQLite via la console navigateur ou le panneau de configuration
+
+```php
+// auth.php — redirect URI OAuth Playground
+$redirectUri = 'https://developers.google.com/oauthplayground';
+```
 
 ---
 
@@ -838,6 +852,12 @@ Pour invalider manuellement :
 ```php
 $cache = new Cache();
 $cache->deleteByPrefix('widget_mon-widget');
+```
+
+**Force-refresh côté frontend** : le bouton d'actualisation de chaque widget envoie `?force=1` qui vide le cache backend avant rechargement :
+
+```
+GET api/widgets.php?action=data&widget=meteo&force=1
 ```
 
 ---
@@ -1183,4 +1203,97 @@ $db->setSetting('s17', 'current_episode', $current);
 $db->setSetting('s17', 'episode_in_progress', $inProgress);
 
 return ['current_ep' => $current, 'in_progress' => (bool) $inProgress];
+```
+
+---
+
+### Widget OAuth2 via Google OAuth Playground — YouTube
+
+Pour les widgets Google (Calendar, YouTube), le redirect URI est `https://developers.google.com/oauthplayground` car le domaine `.test` local n'est pas accepté par Google.
+
+**`widgets/youtube/auth.php`** — Redirection vers Google OAuth :
+
+```php
+$redirectUri = 'https://developers.google.com/oauthplayground';
+
+$params = http_build_query([
+    'client_id'     => $clientId,
+    'redirect_uri'  => $redirectUri,
+    'response_type' => 'code',
+    'scope'         => 'https://www.googleapis.com/auth/youtube.readonly',
+    'access_type'   => 'offline',
+    'prompt'        => 'consent',
+]);
+
+header('Location: https://accounts.google.com/o/oauth2/v2/auth?' . $params);
+```
+
+> L'utilisateur récupère manuellement le refresh_token via OAuth Playground, puis le sauvegarde via la console navigateur.
+
+**`widgets/youtube/api.php`** — Points clés :
+
+```php
+// Limiter le nombre de chaînes (éviter timeout 30s)
+$maxChannels = 25;
+$subs = array_slice($subs, 0, $maxChannels);
+
+// Upload playlist : remplacer "UC" par "UU" dans le channel ID
+$playlistId = 'UU' . substr($channelId, 2);
+
+// Filtrer les Shorts : #shorts dans le titre OU durée < 3 minutes
+foreach ($allVideos as $v) {
+    if (preg_match('/#shorts?\b/i', $v['title'])) {
+        $shortIds[] = $v['id'];
+    }
+}
+
+// Durée via videos.list (par batch de 50)
+foreach (array_chunk($videoIds, 50) as $chunk) {
+    $url = 'https://www.googleapis.com/youtube/v3/videos'
+         . '?part=contentDetails&id=' . implode(',', $chunk);
+    // ... parse ISO 8601 duration, filter < 180s
+}
+```
+
+---
+
+### Widget local avec mutate — Colis
+
+Widget sans API externe : les données sont stockées localement en SQLite.
+
+**`widgets/parcels/api.php`** — Suivi local avec liens transporteurs :
+
+```php
+// Transporteurs avec URLs de suivi
+$carriers = [
+    'colissimo'    => ['name' => 'Colissimo',    'url' => 'https://www.laposte.fr/outils/suivre-vos-envois?code={number}'],
+    'chronopost'   => ['name' => 'Chronopost',   'url' => 'https://www.chronopost.fr/tracking-no-powerful/tracking?listeNumerosLT={number}'],
+    'ups'          => ['name' => 'UPS',          'url' => 'https://www.ups.com/track?tracknum={number}'],
+    // ...
+];
+
+// Liste des colis depuis SQLite
+$trackingList = json_decode($db->getSetting('parcels', 'tracking_list') ?: '[]', true);
+
+return [
+    'parcels'  => $trackingList,
+    'carriers' => array_map(fn($c) => $c['name'], $carriers),
+    'count'    => count($trackingList),
+];
+```
+
+**`widgets/parcels/mutate.php`** — Détection automatique du transporteur :
+
+```php
+function detectCarrier(string $number): string {
+    if (preg_match('/^(6A|8R|C[A-Z])/i', $number)) return 'colissimo';
+    if (preg_match('/^1Z/i', $number))               return 'ups';
+    if (preg_match('/^\d{12,15}$/', $number))         return 'fedex';
+    if (preg_match('/^(JD|JJD)/i', $number))          return 'dhl';
+    if (preg_match('/^\d{8}$/', $number))              return 'mondialrelay';
+    // ...
+    return 'autre';
+}
+
+// Actions : add, remove, status (changement manuel)
 ```

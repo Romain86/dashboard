@@ -10,8 +10,8 @@ Développée en PHP (backend API REST) + JavaScript (frontend).
 - **Backend** : PHP 8+, API REST
 - **Base de données** : SQLite (via PDO)
 - **Cache** : Fichiers JSON locaux
-- **Frontend** : JavaScript vanilla ou Vue.js (à venir)
-- **Serveur local** : Herd
+- **Frontend** : JavaScript vanilla
+- **Serveur local** : Herd (`https://dashboard.test/`)
 
 ---
 
@@ -19,44 +19,35 @@ Développée en PHP (backend API REST) + JavaScript (frontend).
 
 ```
 dashboard/
-├── index.php                  # (à créer) Frontend principal
+├── index.php                  # Frontend principal (HTML)
 ├── config.php                 # Constantes globales, autoload
 ├── api/
-│   └── widgets.php            # Point d'entrée API (actions: list, data, settings, layout)
+│   └── widgets.php            # API REST (list, data, settings, layout, mutate, size)
 ├── widgets/
-│   ├── steam/
-│   │   ├── config.json
-│   │   ├── api.php
-│   │   └── widget.js
-│   ├── twitch/
-│   │   ├── config.json
-│   │   ├── api.php
-│   │   └── widget.js
-│   ├── spotify/
-│   │   ├── config.json
-│   │   ├── api.php
-│   │   └── widget.js
-│   └── meteo/
-│       ├── config.json
-│       ├── api.php
-│       └── widget.js
+│   └── {id}/
+│       ├── config.json        # Métadonnées du widget
+│       ├── api.php            # Logique backend (données)
+│       ├── widget.js          # Rendu frontend
+│       ├── mutate.php         # Actions CRUD (optionnel)
+│       ├── auth.php           # Redirection OAuth2 (optionnel)
+│       └── callback.php       # Callback OAuth2 (optionnel)
 ├── core/
 │   ├── WidgetManager.php      # Scanne et appelle les widgets
 │   ├── Cache.php              # Cache JSON avec TTL + méthode remember()
 │   └── Database.php           # Singleton SQLite
 ├── assets/
-│   ├── css/
-│   │   └── dashboard.css
+│   ├── css/                   # 8 fichiers CSS modulaires
 │   └── js/
-│       └── dashboard.js
-└── data/
-    ├── dashboard.db           # Créé automatiquement par Database.php
-    └── cache/                 # Créé automatiquement par Cache.php
+│       ├── dashboard.js       # Core (état + init)
+│       └── modules/           # 10 modules JS
+└── data/                      # Créé automatiquement (gitignored)
+    ├── dashboard.db           # Base SQLite
+    └── cache/                 # Fichiers cache JSON
 ```
 
 ---
 
-## Fichiers déjà développés
+## Fichiers core
 
 ### config.php
 - Définit les constantes : `ROOT_PATH`, `WIDGETS_PATH`, `DATA_PATH`, `CACHE_PATH`, `DB_PATH`, `DEFAULT_CACHE_TTL`
@@ -65,12 +56,12 @@ dashboard/
 
 ### core/Database.php
 - Singleton PDO SQLite
-- Tables : `widget_settings` (clé/valeur par widget) et `widget_layout` (position + enabled)
+- Tables : `widget_settings` (clé/valeur par widget) et `widget_layout` (position + enabled + size)
 - Méthodes : `getSetting`, `getSettings`, `setSetting`, `getLayout`, `saveLayout`
 
 ### core/Cache.php
 - Cache fichier JSON avec TTL
-- Méthodes : `get`, `set`, `delete`, `clear`, `remember(key, ttl, callback)`
+- Méthodes : `get`, `set`, `delete`, `deleteByPrefix`, `clear`, `remember(key, ttl, callback)`
 
 ### core/WidgetManager.php
 - Scanne `widgets/*/config.json` pour découvrir les widgets
@@ -79,8 +70,11 @@ dashboard/
 ### api/widgets.php
 - `?action=list` — Liste tous les widgets avec leur état (activé/position)
 - `?action=data&widget=steam` — Retourne les données d'un widget (avec cache)
+- `?action=data&widget=steam&force=1` — Force le vidage du cache avant rechargement
 - `POST ?action=settings&widget=steam` — Sauvegarde les paramètres
 - `POST ?action=layout` — Sauvegarde la disposition
+- `POST ?action=mutate&widget=s17` — Action CRUD custom
+- `POST ?action=size&widget=steam` — Sauvegarde la taille
 
 ---
 
@@ -120,28 +114,29 @@ Reçoit les données de l'API et génère le HTML du widget.
 
 ---
 
-## Widgets prévus
+## Widgets
 
-| Widget   | API                        | Auth         | Refresh |
-|----------|----------------------------|--------------|---------|
-| Steam    | api.steampowered.com       | API Key      | 5 min   |
-| Twitch   | api.twitch.tv              | OAuth2       | 1 min   |
-| Spotify  | api.spotify.com            | OAuth2       | 30 sec  |
-| Météo    | openweathermap.org         | API Key      | 10 min  |
-| TMDB     | api.themoviedb.org         | API Key      | 1h      |
-| RSS      | Flux RSS directs           | Aucune       | 30 min  |
+| Widget | API | Auth | Refresh |
+|--------|-----|------|---------|
+| Météo | OpenWeatherMap | API Key | 10 min |
+| Spotify | Spotify Web API | OAuth2 | 30 sec |
+| Steam | Steam Web API | API Key | 5 min |
+| Twitch | Twitch Helix API | OAuth2 | 1 min |
+| GitHub | GitHub REST API | Token | 5 min |
+| Google Calendar | Google Calendar API | OAuth2 (OAuth Playground) | 5 min |
+| TMDB | TMDB API | API Key | 1h |
+| RSS | Flux RSS directs | — | 30 min |
+| Countdown | — | — | 1h |
+| Tablatures | — | — | 1h |
+| Studio 17 | — (calcul local) | — | 1h |
+| YouTube | YouTube Data API v3 | OAuth2 (OAuth Playground) | 10 min |
+| Colis | — (suivi local) | — | 1h |
 
----
+### Notes spécifiques
 
-## Prochaine étape
-
-Développer le **premier widget** : Steam ou Twitch (APIs bien documentées).
-
-Pour chaque widget, il faudra :
-1. Créer `widgets/{id}/config.json`
-2. Créer `widgets/{id}/api.php` qui appelle l'API externe et retourne les données
-3. Créer `widgets/{id}/widget.js` pour le rendu HTML
-4. Tester via `api/widgets.php?action=data&widget={id}`
+- **YouTube** : OAuth2 via Google OAuth Playground (`redirect_uri = https://developers.google.com/oauthplayground`). Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes pour éviter le timeout.
+- **Colis** : Pas d'API externe (17TRACK/La Poste nécessitent un compte pro). Détection automatique du transporteur par regex sur le numéro. Liens directs vers les pages de suivi.
+- **Google Calendar** : Même méthode OAuth Playground que YouTube.
 
 ---
 
