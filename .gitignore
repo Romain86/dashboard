@@ -1,6 +1,5 @@
 # Données locales
-data/dashboard.db
-data/cache/
+data/
 
 # Logs
 *.log

@@ -11,7 +11,7 @@ Développée en PHP (backend API REST) + JavaScript (frontend).
 - **Base de données** : SQLite (via PDO)
 - **Cache** : Fichiers JSON locaux
 - **Frontend** : JavaScript vanilla ou Vue.js (à venir)
-- **Serveur local** : Laragon
+- **Serveur local** : Herd
 
 ---
 
