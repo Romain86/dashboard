@@ -10,8 +10,6 @@ window.DashboardWidgets.rss = {
         const max     = data.max     ?? 10;
         const errors  = data.errors  ?? [];
 
-        container.style.maxHeight     = '400px';
-        container.style.overflow      = 'hidden';
         container.style.display       = 'flex';
         container.style.flexDirection = 'column';
 
