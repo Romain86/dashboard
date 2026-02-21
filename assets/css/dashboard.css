@@ -160,6 +160,28 @@ body {
     50%       { opacity: 0.5; transform: scale(0.75); }
 }
 
+/* Handle de drag */
+.widget-drag-handle {
+    color: var(--muted);
+    cursor: grab;
+    padding: 0 4px 0 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity var(--transition);
+    user-select: none;
+}
+.widget-card:hover .widget-drag-handle { opacity: 1; }
+
+/* État pendant le drag */
+.widget-card.dragging {
+    opacity: 0.35;
+    cursor: grabbing;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
 .widget-name {
     font-size: 13px;
     font-weight: 600;

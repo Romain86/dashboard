@@ -45,6 +45,7 @@ const Dashboard = {
         await Promise.all(enabled.map(w => this._mountWidget(w)));
 
         this._bindModal();
+        this._initDragDrop();
 
         // Fermer les dropdowns custom au clic en dehors
         document.addEventListener('click', () => {
@@ -205,12 +206,20 @@ const Dashboard = {
         const card = document.createElement('div');
         card.className = 'widget-card';
         card.id = `widget-card-${widget.id}`;
+        card.draggable = true;
 
         const sizeLabel = { normal: 'N', lg: 'L', xl: 'XL' };
         const currentSize = widget.size ?? 'normal';
 
         card.innerHTML = `
             <div class="widget-header">
+                <span class="widget-drag-handle" title="Déplacer">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                        <circle cx="3" cy="2" r="1.2"/><circle cx="9" cy="2" r="1.2"/>
+                        <circle cx="3" cy="6" r="1.2"/><circle cx="9" cy="6" r="1.2"/>
+                        <circle cx="3" cy="10" r="1.2"/><circle cx="9" cy="10" r="1.2"/>
+                    </svg>
+                </span>
                 <div class="widget-icon-wrap">
                     <span class="widget-icon">${this._renderIcon(widget.icon)}</span>
                     <span class="widget-badge hidden" id="badge-${widget.id}"></span>
@@ -271,6 +280,69 @@ const Dashboard = {
         card.dataset.size = currentSize;
 
         return card;
+    },
+
+    /* --------------------------------------------------
+       Drag & Drop — réorganisation des widgets
+    -------------------------------------------------- */
+    _initDragDrop() {
+        const grid = document.getElementById('widgets-grid');
+        let dragEl  = null;
+        let dragSrc = null; // position originale pour annulation
+
+        grid.addEventListener('dragstart', e => {
+            dragEl = e.target.closest('.widget-card');
+            if (!dragEl) return;
+            dragSrc = dragEl.nextSibling;
+            dragEl.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', dragEl.id);
+        });
+
+        grid.addEventListener('dragend', () => {
+            if (!dragEl) return;
+            dragEl.classList.remove('dragging');
+            // Supprimer indicateur si présent
+            grid.querySelectorAll('.drag-indicator').forEach(el => el.remove());
+            dragEl  = null;
+            dragSrc = null;
+            this._saveLayout();
+        });
+
+        grid.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (!dragEl) return;
+            e.dataTransfer.dropEffect = 'move';
+
+            const target = e.target.closest('.widget-card');
+            if (!target || target === dragEl) return;
+
+            const rect = target.getBoundingClientRect();
+            if (e.clientY < rect.top + rect.height / 2) {
+                grid.insertBefore(dragEl, target);
+            } else {
+                grid.insertBefore(dragEl, target.nextSibling);
+            }
+        });
+
+        grid.addEventListener('drop', e => {
+            e.preventDefault();
+        });
+    },
+
+    async _saveLayout() {
+        const cards  = document.querySelectorAll('#widgets-grid .widget-card');
+        const layout = Array.from(cards).map((card, i) => ({
+            id:       card.id.replace('widget-card-', ''),
+            position: i,
+            enabled:  true,
+        }));
+
+        await fetch('api/widgets.php?action=layout', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(layout),
+        }).catch(console.error);
     },
 
     /* --------------------------------------------------
