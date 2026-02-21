@@ -339,6 +339,7 @@ body.edit-mode .widget-drag-handle       { opacity: 1; }
     transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
     display: flex;
     flex-direction: column;
+    max-height: 480px;
 }
 
 .widget-card:hover {
