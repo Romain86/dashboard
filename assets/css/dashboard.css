@@ -69,7 +69,7 @@ body {
 /* ---- Main layout ---- */
 .dashboard-main {
     padding: 28px 32px;
-    max-width: 1400px;
+    max-width: 2800px;
     margin: 0 auto;
 }
 
@@ -79,6 +79,11 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
     align-items: start;
+}
+
+/* Widget large (2 colonnes) */
+@media (min-width: 641px) {
+    .widget-card--wide { grid-column: span 2; }
 }
 
 .widgets-empty {
@@ -376,6 +381,100 @@ body {
 }
 
 .field-input::placeholder { color: var(--muted); }
+
+/* ---- Dropdown custom (remplace <select> natif) ---- */
+.field-custom-select {
+    position: relative;
+    user-select: none;
+}
+
+.field-cs-current {
+    width: 100%;
+    padding: 9px 32px 9px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239898a6' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.field-cs-current:hover,
+.field-custom-select.open .field-cs-current {
+    border-color: var(--border-focus);
+}
+
+.field-custom-select.open .field-cs-current {
+    background: var(--accent-dim);
+}
+
+.field-cs-dropdown {
+    display: none;
+    margin-top: 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.field-custom-select.open .field-cs-dropdown { display: block; }
+
+.field-cs-option {
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+}
+
+.field-cs-option:hover       { background: var(--bg-hover); color: var(--text); }
+.field-cs-option.is-selected  { color: var(--accent); }
+
+.field-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.field-checkboxes:focus-within {
+    border-color: var(--border-focus);
+    background: var(--accent-dim);
+}
+
+.field-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+}
+
+.field-checkbox-item input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
 
 .modal-actions {
     display: flex;

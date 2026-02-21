@@ -79,8 +79,8 @@ try {
                 $db->setSetting($widgetId, $key, $value);
             }
 
-            // Vider le cache de ce widget
-            $cache->delete('widget_' . $widgetId);
+            // Vider toutes les variantes de cache (y compris les clés avec coordonnées GPS)
+            $cache->deleteByPrefix('widget_' . $widgetId);
 
             echo json_encode(['success' => true]);
             break;

@@ -1,0 +1,76 @@
+{
+    "id": "tmdb",
+    "name": "TMDB",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\"><path fill=\"#01b4e4\" d=\"M0 9.351h2.888v5.324H0V9.351zm3.816 0h8.953v1.931H6.704v.492h5.932v1.506H6.704v.492h6.202v1.903H3.816V9.351zm9.881 0h3.523l1.958 3.164 1.958-3.164H24v5.324h-2.786v-2.147l-1.96 3.002h-.034l-1.958-3.002v2.147h-2.565V9.351zM0 5.48h24v1.44H0V5.48zm0 11.6h24v1.44H0v-1.44z\"/></svg>",
+    "description": "Films et séries populaires du moment",
+    "version": "1.0",
+    "params": [
+        {
+            "key": "api_key",
+            "label": "Clé API TMDB (v3 auth)",
+            "type": "password",
+            "required": true
+        },
+        {
+            "key": "content_type",
+            "label": "Type de contenu",
+            "type": "multiselect",
+            "options": [
+                { "value": "movie", "label": "Films" },
+                { "value": "tv",    "label": "Séries" }
+            ]
+        },
+        {
+            "key": "filter",
+            "label": "Filtre",
+            "type": "select",
+            "default": "trending",
+            "options": [
+                { "value": "trending",    "label": "Tendances du jour" },
+                { "value": "now_playing", "label": "En salle / À l'antenne" },
+                { "value": "popular",     "label": "Populaires" },
+                { "value": "top_rated",   "label": "Mieux notés" }
+            ]
+        },
+        {
+            "key": "provider_ids",
+            "label": "Plateformes (optionnel)",
+            "type": "multiselect",
+            "options": [
+                { "value": "8",   "label": "Netflix" },
+                { "value": "119", "label": "Amazon Prime Video" },
+                { "value": "337", "label": "Disney+" },
+                { "value": "350", "label": "Apple TV+" },
+                { "value": "381", "label": "Canal+" },
+                { "value": "531", "label": "Paramount+" },
+                { "value": "56",  "label": "OCS" },
+                { "value": "283", "label": "Crunchyroll" }
+            ]
+        },
+        {
+            "key": "genre_ids",
+            "label": "Genres (optionnel)",
+            "type": "multiselect",
+            "options": [
+                { "value": "28",    "label": "Action" },
+                { "value": "12",    "label": "Aventure" },
+                { "value": "16",    "label": "Animation" },
+                { "value": "35",    "label": "Comédie" },
+                { "value": "80",    "label": "Crime" },
+                { "value": "99",    "label": "Documentaire" },
+                { "value": "18",    "label": "Drame" },
+                { "value": "10751", "label": "Famille" },
+                { "value": "14",    "label": "Fantastique" },
+                { "value": "36",    "label": "Histoire" },
+                { "value": "27",    "label": "Horreur" },
+                { "value": "9648",  "label": "Mystère" },
+                { "value": "10749", "label": "Romance" },
+                { "value": "878",   "label": "Science-Fiction" },
+                { "value": "53",    "label": "Thriller" },
+                { "value": "10752", "label": "Guerre" },
+                { "value": "37",    "label": "Western" }
+            ]
+        }
+    ],
+    "refresh_interval": 3600
+}

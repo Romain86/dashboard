@@ -41,6 +41,12 @@ const Dashboard = {
         await Promise.all(enabled.map(w => this._mountWidget(w)));
 
         this._bindModal();
+
+        // Fermer les dropdowns custom au clic en dehors
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.field-custom-select.open')
+                    .forEach(s => s.classList.remove('open'));
+        });
     },
 
     /* --------------------------------------------------
@@ -141,11 +147,15 @@ const Dashboard = {
                 contentEl.innerHTML = `<pre style="font-size:11px;color:var(--text-dim);overflow:auto;">${JSON.stringify(data, null, 2)}</pre>`;
             }
         } catch (err) {
-            const msg = err.message ?? '';
-            const isOAuth  = msg.toLowerCase().includes('autorisation') || msg.toLowerCase().includes('manquante');
-            const isSetup  = msg.toLowerCase().includes('non configuré')
-                          || msg.toLowerCase().includes('api key')
-                          || msg.toLowerCase().includes('manquant');
+            const msg    = err.message ?? '';
+            const msgLow = msg.toLowerCase();
+            // isSetup : clé API / client_id manquant(s) — \b évite de matcher "manquante"
+            const isSetup = msgLow.includes('non configuré')
+                         || msgLow.includes('api key')
+                         || /\bmanquants?\b/.test(msgLow);
+            // isOAuth : app configurée mais token/session absent — priorité à isSetup
+            const isOAuth = !isSetup
+                         && (msgLow.includes('autorisation') || msgLow.includes('manquante') || msgLow.includes('session'));
 
             if (isOAuth) {
                 // OAuth requis : bouton vers la page d'autorisation du widget
@@ -278,17 +288,100 @@ const Dashboard = {
             label.className = 'field-label' + (param.required ? ' field-required' : '');
             label.setAttribute('for', `field-${param.key}`);
             label.textContent = param.label;
-
-            const input = document.createElement('input');
-            input.className  = 'field-input';
-            input.id         = `field-${param.key}`;
-            input.name       = param.key;
-            input.type       = param.type === 'password' ? 'password' : 'text';
-            input.placeholder = param.placeholder ?? '';
-            if (param.required) input.required = true;
-
             group.appendChild(label);
-            group.appendChild(input);
+
+            if (param.type === 'select') {
+                const wrapper = document.createElement('div');
+                wrapper.className    = 'field-custom-select';
+                wrapper.dataset.name = param.key;
+
+                const current = document.createElement('div');
+                current.className = 'field-cs-current';
+                current.setAttribute('tabindex', '0');
+
+                const dropdown = document.createElement('div');
+                dropdown.className = 'field-cs-dropdown';
+
+                const hidden = document.createElement('input');
+                hidden.type  = 'hidden';
+                hidden.name  = param.key;
+                hidden.value = param.default ?? (param.options?.[0]?.value ?? '');
+
+                const updateCurrent = (val) => {
+                    const opt = (param.options ?? []).find(o => o.value === val);
+                    current.textContent = opt?.label ?? val;
+                    hidden.value = val;
+                    dropdown.querySelectorAll('.field-cs-option').forEach(el => {
+                        el.classList.toggle('is-selected', el.dataset.value === val);
+                    });
+                };
+
+                (param.options ?? []).forEach(opt => {
+                    const item = document.createElement('div');
+                    item.className    = 'field-cs-option';
+                    item.dataset.value = opt.value;
+                    item.textContent  = opt.label;
+                    item.addEventListener('mousedown', (e) => {
+                        e.preventDefault(); // éviter la perte de focus
+                        updateCurrent(opt.value);
+                        wrapper.classList.remove('open');
+                    });
+                    dropdown.appendChild(item);
+                });
+
+                updateCurrent(hidden.value);
+
+                current.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = wrapper.classList.contains('open');
+                    document.querySelectorAll('.field-custom-select.open')
+                            .forEach(s => s.classList.remove('open'));
+                    if (!isOpen) wrapper.classList.add('open');
+                });
+
+                current.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        wrapper.classList.toggle('open');
+                    } else if (e.key === 'Escape') {
+                        wrapper.classList.remove('open');
+                    }
+                });
+
+                wrapper.appendChild(current);
+                wrapper.appendChild(dropdown);
+                wrapper.appendChild(hidden);
+                group.appendChild(wrapper);
+
+            } else if (param.type === 'multiselect') {
+                const wrap = document.createElement('div');
+                wrap.className       = 'field-checkboxes';
+                wrap.id              = `field-${param.key}`;
+                wrap.dataset.name    = param.key;
+                (param.options ?? []).forEach(opt => {
+                    const lbl = document.createElement('label');
+                    lbl.className = 'field-checkbox-item';
+                    const cb = document.createElement('input');
+                    cb.type         = 'checkbox';
+                    cb.value        = opt.value;
+                    cb.dataset.group = param.key;
+                    lbl.appendChild(cb);
+                    lbl.appendChild(document.createTextNode(' ' + opt.label));
+                    wrap.appendChild(lbl);
+                });
+                group.appendChild(wrap);
+
+            } else {
+                const input = document.createElement('input');
+                input.className   = 'field-input';
+                input.id          = `field-${param.key}`;
+                input.name        = param.key;
+                input.type        = param.type === 'password' ? 'password' : 'text';
+                input.placeholder = param.placeholder ?? '';
+                if (param.required) input.required = true;
+                group.appendChild(input);
+            }
+
             container.appendChild(group);
         });
 
@@ -298,8 +391,32 @@ const Dashboard = {
             .then(data => {
                 if (!data.success || !data.settings) return;
                 Object.entries(data.settings).forEach(([key, val]) => {
-                    const input = container.querySelector(`[name="${key}"]`);
-                    if (input) input.value = val;
+                    // text / password
+                    const input = container.querySelector(`.field-input[name="${key}"]`);
+                    if (input) { input.value = val; return; }
+                    // custom select
+                    const customSel = container.querySelector(`.field-custom-select[data-name="${key}"]`);
+                    if (customSel && val) {
+                        const hid = customSel.querySelector('input[type="hidden"]');
+                        const cur = customSel.querySelector('.field-cs-current');
+                        if (hid) hid.value = val;
+                        const optEl = customSel.querySelector(`.field-cs-option[data-value="${CSS.escape(val)}"]`);
+                        if (cur && optEl) {
+                            cur.textContent = optEl.textContent;
+                            customSel.querySelectorAll('.field-cs-option').forEach(el => {
+                                el.classList.toggle('is-selected', el.dataset.value === val);
+                            });
+                        }
+                        return;
+                    }
+                    // multiselect : cocher les cases correspondantes
+                    const wrap = container.querySelector(`.field-checkboxes[data-name="${key}"]`);
+                    if (wrap && val) {
+                        val.split(',').forEach(v => {
+                            const cb = wrap.querySelector(`input[value="${v.trim()}"]`);
+                            if (cb) cb.checked = true;
+                        });
+                    }
                 });
             })
             .catch(() => {});
@@ -315,6 +432,19 @@ const Dashboard = {
         const inputs = form.querySelectorAll('.field-input[name]');
         const values = {};
         inputs.forEach(input => { values[input.name] = input.value; });
+
+        // Collecter les valeurs des dropdowns custom
+        form.querySelectorAll('.field-custom-select[data-name]').forEach(wrap => {
+            const hid = wrap.querySelector('input[type="hidden"]');
+            if (hid) values[hid.name] = hid.value;
+        });
+
+        // Collecter les valeurs multiselect (checkboxes) → chaîne séparée par virgules
+        form.querySelectorAll('.field-checkboxes[data-name]').forEach(wrap => {
+            const key     = wrap.dataset.name;
+            const checked = [...wrap.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+            values[key]   = checked.join(',');
+        });
 
         const btn = document.getElementById('save-settings');
         btn.disabled    = true;

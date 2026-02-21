@@ -54,6 +54,18 @@ class Cache
         }
     }
 
+    /**
+     * Supprime tous les fichiers de cache dont le nom commence par $prefix.
+     * Utile pour effacer les variantes GPS : widget_tmdb_48_85_2_35.json, etc.
+     */
+    public function deleteByPrefix(string $prefix): void
+    {
+        $safePrefix = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $prefix);
+        foreach (glob($this->cachePath . '/' . $safePrefix . '*.json') as $file) {
+            unlink($file);
+        }
+    }
+
     public function clear(): void
     {
         foreach (glob($this->cachePath . '/*.json') as $file) {
