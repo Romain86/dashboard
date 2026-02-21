@@ -1,0 +1,15 @@
+{
+    "id": "s17",
+    "name": "Studio 17",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\"><path d=\"M12 2L21 7v10l-9 5-9-5V7z\" fill=\"#50FFD2\"/><text x=\"12\" y=\"15\" text-anchor=\"middle\" font-family=\"Arial,sans-serif\" font-weight=\"900\" font-size=\"9\" fill=\"#111122\">17</text></svg>",
+    "description": "Suivi de campagne JDR sur Studio17.video",
+    "version": "1.1",
+    "params": [
+        { "key": "campaign_url",    "label": "URL de la campagne",           "type": "text",     "required": true, "placeholder": "https://www.studio17.video/content/..." },
+        { "key": "campaign_name",   "label": "Nom de la campagne",           "type": "text",     "required": true },
+        { "key": "ep_anchor_date",  "label": "Date de l'épisode de référence (YYYY-MM-DD)", "type": "text", "required": true, "placeholder": "2026-02-18" },
+        { "key": "ep_anchor_count", "label": "Nombre d'épisodes à cette date", "type": "text",   "required": true, "placeholder": "18" },
+        { "key": "ep_release_hour", "label": "Heure de sortie (0-23)",       "type": "text",     "required": false, "placeholder": "10" }
+    ],
+    "refresh_interval": 3600
+}
