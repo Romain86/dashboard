@@ -21,14 +21,14 @@ window.DashboardWidgets.spotify = {
 
         container.innerHTML = `
             <div class="sp-now">
-                <a class="sp-cover-link" href="${this._esc(track.url)}" target="_blank" rel="noopener">
+                <a class="sp-cover-link" href="${this._esc(track.url)}" data-sp-url="${this._esc(track.url)}">
                     ${track.image
                         ? `<img class="sp-cover" src="${this._esc(track.image)}" alt="" width="64" height="64">`
                         : `<div class="sp-cover sp-cover-placeholder">🎵</div>`}
                     <span class="sp-playing-badge">▶</span>
                 </a>
                 <div class="sp-track-info">
-                    <a class="sp-track-name" href="${this._esc(track.url)}" target="_blank" rel="noopener">${this._esc(track.name)}</a>
+                    <a class="sp-track-name" href="${this._esc(track.url)}" data-sp-url="${this._esc(track.url)}">${this._esc(track.name)}</a>
                     <div class="sp-track-artist">${this._esc(track.artist)}</div>
                     <div class="sp-track-album">${this._esc(track.album)}</div>
                     <div class="sp-progress-wrap">
@@ -43,6 +43,8 @@ window.DashboardWidgets.spotify = {
                 </div>
             </div>
             ${recent.length ? this._renderRecentList(recent) : ''}`;
+
+        this._bindSpotifyLinks(container);
 
         // Avancer la barre de progression en temps réel
         this._progressInterval = setInterval(() => {
@@ -66,12 +68,13 @@ window.DashboardWidgets.spotify = {
         container.innerHTML = `
             <div class="sp-recent-label">Dernière écoute</div>
             ${this._renderRecentList(recent)}`;
+        this._bindSpotifyLinks(container);
     },
 
     _renderRecentList(tracks) {
         return `<div class="sp-recent">${tracks.map((t, i) => `
             <a class="sp-recent-item ${i === 0 ? 'sp-recent-first' : ''}"
-               href="${this._esc(t.url)}" target="_blank" rel="noopener">
+               href="${this._esc(t.url)}" data-sp-url="${this._esc(t.url)}">
                 ${t.image
                     ? `<img class="sp-recent-img" src="${this._esc(t.image)}" alt="" width="36" height="36">`
                     : `<div class="sp-recent-img sp-cover-placeholder">🎵</div>`}
@@ -80,6 +83,25 @@ window.DashboardWidgets.spotify = {
                     <div class="sp-recent-artist">${this._esc(t.artist)}</div>
                 </div>
             </a>`).join('')}</div>`;
+    },
+
+    _spUri(webUrl) {
+        const m = (webUrl ?? '').match(/open\.spotify\.com\/([a-z]+)\/([A-Za-z0-9]+)/);
+        return m ? `spotify:${m[1]}:${m[2]}` : webUrl;
+    },
+
+    _bindSpotifyLinks(container) {
+        container.addEventListener('click', e => {
+            const link = e.target.closest('[data-sp-url]');
+            if (!link) return;
+            e.preventDefault();
+            const webUrl = link.dataset.spUrl;
+            window.location.href = this._spUri(webUrl);
+            const t = setTimeout(() => window.open(webUrl, '_blank'), 1500);
+            // Si l'app s'ouvre, la fenêtre perd le focus → on annule le fallback web
+            const cancel = () => { clearTimeout(t); window.removeEventListener('blur', cancel); };
+            window.addEventListener('blur', cancel);
+        });
     },
 
     _pct(ms, total) {
