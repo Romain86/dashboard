@@ -11,6 +11,7 @@ const Dashboard = {
     _location:      null,
     _widgetErrors:  {},
     _editMode:      false,
+    _fsHideTimer:   null,
 
     /* --------------------------------------------------
        Init
@@ -146,6 +147,41 @@ const Dashboard = {
             }
             document.querySelectorAll('[data-refresh]').forEach(b => b.click());
         });
+
+        // Configuration
+        document.getElementById('btn-config')?.addEventListener('click', () => this._openConfigPanel());
+        document.getElementById('cp-close')?.addEventListener('click',   () => this._closeConfigPanel());
+        document.getElementById('cp-overlay')?.addEventListener('click', () => this._closeConfigPanel());
+
+        // Plein écran
+        const btnFs = document.getElementById('btn-fullscreen');
+        if (btnFs) {
+            btnFs.addEventListener('click', () => {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+                else document.exitFullscreen();
+            });
+            document.addEventListener('fullscreenchange', () => {
+                const fs = !!document.fullscreenElement;
+                document.body.classList.toggle('is-fullscreen', fs);
+                btnFs.querySelector('.icon-expand')?.classList.toggle('hidden', fs);
+                btnFs.querySelector('.icon-compress')?.classList.toggle('hidden', !fs);
+                // Réinitialiser l'auto-hide quand on sort du plein écran
+                if (!fs) {
+                    clearTimeout(this._fsHideTimer);
+                    document.querySelector('.dashboard-header')?.classList.remove('fs-hidden');
+                }
+            });
+            document.addEventListener('mousemove', e => {
+                if (!document.fullscreenElement) return;
+                const hdr = document.querySelector('.dashboard-header');
+                if (!hdr) return;
+                hdr.classList.remove('fs-hidden');
+                clearTimeout(this._fsHideTimer);
+                if (e.clientY > 64) {
+                    this._fsHideTimer = setTimeout(() => hdr.classList.add('fs-hidden'), 2000);
+                }
+            });
+        }
     },
 
     /* --------------------------------------------------
@@ -810,6 +846,67 @@ const Dashboard = {
 
         const hasCards = document.querySelectorAll('#widgets-grid .widget-card').length > 0;
         document.getElementById('widgets-empty').classList.toggle('hidden', hasCards);
+    },
+
+    /* --------------------------------------------------
+       Config Panel
+    -------------------------------------------------- */
+    async _openConfigPanel() {
+        const panel = document.getElementById('config-panel');
+        panel.classList.remove('hidden');
+
+        const list = document.getElementById('cp-list');
+        list.innerHTML = '<div class="cp-loading">Chargement…</div>';
+
+        // Charger le statut de chaque widget en parallèle
+        const items = await Promise.all(this._widgetList.map(async w => {
+            let status = 'none'; // pas de params requis
+            try {
+                const [cfgRes, setRes] = await Promise.all([
+                    fetch(`widgets/${w.id}/config.json`).then(r => r.json()),
+                    fetch(`api/widgets.php?action=settings-get&widget=${encodeURIComponent(w.id)}`).then(r => r.json()),
+                ]);
+                const requiredParams = (cfgRes.params ?? []).filter(p => p.required);
+                if (requiredParams.length > 0) {
+                    const settings = setRes.settings ?? {};
+                    const allSet = requiredParams.every(p => settings[p.key] && String(settings[p.key]).trim() !== '');
+                    status = allSet ? 'ok' : 'warn';
+                }
+            } catch (_) {}
+            return { widget: w, status };
+        }));
+
+        this._renderConfigPanel(items);
+    },
+
+    _closeConfigPanel() {
+        document.getElementById('config-panel').classList.add('hidden');
+    },
+
+    _renderConfigPanel(items) {
+        const list = document.getElementById('cp-list');
+        list.innerHTML = items.map(({ widget: w, status }) => {
+            const statusHtml = status === 'ok'
+                ? '<span class="cp-status cp-status-ok">✓ OK</span>'
+                : status === 'warn'
+                    ? '<span class="cp-status cp-status-warn">⚠ Config</span>'
+                    : '';
+            return `
+                <div class="cp-item">
+                    <span class="cp-item-icon">${this._renderIcon(w.icon)}</span>
+                    <div class="cp-item-body">
+                        <div class="cp-item-name">${this._escHtml(w.name)}</div>
+                        ${statusHtml}
+                    </div>
+                    <button class="cp-btn" data-cp-id="${this._escHtml(w.id)}">Configurer</button>
+                </div>`;
+        }).join('');
+
+        list.querySelectorAll('[data-cp-id]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this._openSettings(btn.dataset.cpId);
+            });
+        });
     },
 
     /* --------------------------------------------------

@@ -37,6 +37,14 @@
                 </svg>
             </button>
 
+            <button id="btn-config" class="header-btn" title="Configuration des widgets" aria-label="Configuration">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2.2" fill="var(--bg-base)" stroke="currentColor"/>
+                    <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.2" fill="var(--bg-base)" stroke="currentColor"/>
+                    <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2.2" fill="var(--bg-base)" stroke="currentColor"/>
+                </svg>
+            </button>
+
             <button id="btn-manage" class="header-btn" title="Gérer les widgets" aria-label="Gérer les widgets">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -66,6 +74,15 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/>
                     <path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>
+                </svg>
+            </button>
+
+            <button id="btn-fullscreen" class="header-btn" title="Plein écran" aria-label="Plein écran">
+                <svg class="icon-expand" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+                <svg class="icon-compress hidden" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
                 </svg>
             </button>
 
@@ -115,6 +132,22 @@
             </div>
             <div id="wm-list" class="wm-list"></div>
         </div>
+    </div>
+
+    <!-- Config Panel Drawer -->
+    <div id="config-panel" class="cp-panel hidden">
+        <div class="cp-overlay" id="cp-overlay"></div>
+        <aside class="cp-drawer">
+            <div class="cp-header">
+                <h2 class="cp-title">Configuration</h2>
+                <button class="header-btn" id="cp-close" aria-label="Fermer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="cp-list" class="cp-list"></div>
+        </aside>
     </div>
 
     <script src="assets/js/dashboard.js?v=<?= filemtime(__DIR__ . '/assets/js/dashboard.js') ?>"></script>
