@@ -15,6 +15,8 @@ window.DashboardWidgets.rss = {
 
         html += items.map(item => this._renderItem(item)).join('');
 
+        container.style.maxHeight  = '400px';
+        container.style.overflowY  = 'auto';
         container.innerHTML = `<div class="rss-list">${html}</div>`;
     },
 
