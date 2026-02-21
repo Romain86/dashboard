@@ -2,7 +2,7 @@ window.DashboardWidgets = window.DashboardWidgets || {};
 
 window.DashboardWidgets.github = {
 
-    _view: 'activity', // 'activity' | 'repos'
+    _view: 'repos', // 'activity' | 'repos'
 
     render(data, container) {
         this._injectStyles();
