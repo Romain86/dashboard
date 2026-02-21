@@ -27,7 +27,6 @@ window.DashboardWidgets.countdown = {
             return;
         }
 
-        container.style.maxHeight = '400px';
         container.style.overflowY = 'auto';
 
         container.innerHTML = `<div class="cd-list">${events.map((e, i) => this._renderCard(e, i)).join('')}</div>`;

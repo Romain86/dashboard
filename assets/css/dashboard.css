@@ -236,8 +236,8 @@ body {
 
 .widget-content {
     padding: 16px;
-    min-height: 100px;
     flex: 1;
+    min-height: 0;
 }
 
 /* ---- Loading Skeleton ---- */

@@ -4,7 +4,6 @@ window.DashboardWidgets.gcal = {
 
     render(data, container) {
         this._injectStyles();
-        container.style.maxHeight = '400px';
         container.style.overflowY = 'auto';
 
         if (data.needs_auth) {

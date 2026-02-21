@@ -21,6 +21,9 @@ const Dashboard = {
     async init() {
         this._startClock();
 
+        // Version de page pour le cache-busting des widget.js
+        this._pageVersion = Date.now();
+
         // Horodatage de la visite précédente (pour les badges)
         this._lastVisit = parseInt(localStorage.getItem('dashboard_last_visit') || '0');
         localStorage.setItem('dashboard_last_visit', Math.floor(Date.now() / 1000));
@@ -367,14 +370,17 @@ const Dashboard = {
     },
 
     _loadScript(src) {
+        // Cache-busting : version = timestamp du chargement de la page (une seule fois par session)
+        const versioned = `${src}?v=${this._pageVersion}`;
         return new Promise((resolve, reject) => {
-            // Éviter de charger deux fois le même script
-            if (document.querySelector(`script[src="${src}"]`)) {
+            // Éviter de charger deux fois le même script dans la même session
+            if (document.querySelector(`script[data-src="${src}"]`)) {
                 resolve();
                 return;
             }
             const s = document.createElement('script');
-            s.src = src;
+            s.src = versioned;
+            s.dataset.src = src;
             s.onload  = resolve;
             s.onerror = reject;
             document.head.appendChild(s);
