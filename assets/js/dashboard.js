@@ -6,23 +6,27 @@
 
 const Dashboard = {
 
-    /** Liste des widgets chargés (config depuis l'API) */
-    _widgetList: [],
-
-    /** Config active pour le modal settings */
+    _widgetList:    [],
     _settingsWidget: null,
-
-    /** Géolocalisation du navigateur {lat, lon} ou null */
-    _location: null,
+    _location:      null,
+    _widgetErrors:  {},
+    _editMode:      false,
 
     /* --------------------------------------------------
        Init
     -------------------------------------------------- */
     async init() {
         this._startClock();
+        this._initHeaderButtons();
 
-        // Version de page pour le cache-busting des widget.js
         this._pageVersion = Date.now();
+
+        // Restaurer le mode édition
+        this._editMode = localStorage.getItem('db_edit_mode') === '1';
+        if (this._editMode) {
+            document.body.classList.add('edit-mode');
+            document.getElementById('btn-edit')?.classList.add('active');
+        }
 
         // Horodatage de la visite précédente (pour les badges)
         this._lastVisit = parseInt(localStorage.getItem('dashboard_last_visit') || '0');
@@ -66,9 +70,10 @@ const Dashboard = {
             navigator.geolocation.getCurrentPosition(
                 pos => {
                     this._location = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    this._updateGeoBtn(true);
                     resolve();
                 },
-                () => resolve(), // refus ou erreur : on continue sans coords
+                () => { this._updateGeoBtn(false); resolve(); }, // refus ou erreur
                 { timeout: 5000, maximumAge: 300000 }
             );
         });
@@ -78,16 +83,69 @@ const Dashboard = {
        Horloge
     -------------------------------------------------- */
     _startClock() {
-        const el = document.getElementById('clock');
+        const timeEl = document.getElementById('clock-time');
+        const dateEl = document.getElementById('clock-date');
         const update = () => {
             const now = new Date();
-            el.textContent = now.toLocaleString('fr-FR', {
-                weekday: 'long', day: 'numeric', month: 'long',
+            timeEl.textContent = now.toLocaleTimeString('fr-FR', {
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            dateEl.textContent = now.toLocaleDateString('fr-FR', {
+                weekday: 'long', day: 'numeric', month: 'long'
             });
         };
         update();
         setInterval(update, 1000);
+    },
+
+    _initHeaderButtons() {
+        // Rafraîchir tout
+        document.getElementById('btn-refresh-all')?.addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            btn.classList.add('spinning');
+            document.querySelectorAll('[data-refresh]').forEach(b => b.click());
+            setTimeout(() => btn.classList.remove('spinning'), 800);
+        });
+
+        // Mode édition
+        document.getElementById('btn-edit')?.addEventListener('click', () => {
+            this._editMode = !this._editMode;
+            document.body.classList.toggle('edit-mode', this._editMode);
+            localStorage.setItem('db_edit_mode', this._editMode ? '1' : '0');
+            document.getElementById('btn-edit').classList.toggle('active', this._editMode);
+            // Activer/désactiver le draggable sur les cartes
+            document.querySelectorAll('.widget-card').forEach(c => {
+                c.draggable = this._editMode;
+            });
+        });
+
+        // Gérer les widgets
+        document.getElementById('btn-manage')?.addEventListener('click', () => this._openWidgetManager());
+        document.getElementById('wm-close')?.addEventListener('click',   () => this._closeWidgetManager());
+        document.getElementById('wm-overlay')?.addEventListener('click', () => this._closeWidgetManager());
+
+        // Alertes
+        document.getElementById('btn-alerts')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dd = document.getElementById('alert-dropdown');
+            const wasHidden = dd.classList.contains('hidden');
+            dd.classList.toggle('hidden');
+            if (wasHidden) this._renderAlertDropdown();
+        });
+        document.addEventListener('click', () => {
+            document.getElementById('alert-dropdown')?.classList.add('hidden');
+        });
+
+        // Géolocalisation — toggle
+        document.getElementById('btn-geo')?.addEventListener('click', async () => {
+            if (this._location) {
+                this._location = null;
+                this._updateGeoBtn(false);
+            } else {
+                await this._getLocation();
+            }
+            document.querySelectorAll('[data-refresh]').forEach(b => b.click());
+        });
     },
 
     /* --------------------------------------------------
@@ -161,8 +219,8 @@ const Dashboard = {
                 contentEl.innerHTML = `<pre style="font-size:11px;color:var(--text-dim);overflow:auto;">${JSON.stringify(data, null, 2)}</pre>`;
             }
 
-            // Badge de notification : nouvelle donnée depuis la dernière visite ?
             this._updateBadge(widgetId, cache_ts);
+            this._clearError(widgetId);
         } catch (err) {
             const msg    = err.message ?? '';
             const msgLow = msg.toLowerCase();
@@ -201,6 +259,7 @@ const Dashboard = {
                         <div class="error-icon">⚠️</div>
                         <div class="error-msg">${this._escHtml(msg)}</div>
                     </div>`;
+                this._trackError(widgetId, msg);
             }
         }
     },
@@ -209,7 +268,24 @@ const Dashboard = {
         const card = document.createElement('div');
         card.className = 'widget-card';
         card.id = `widget-card-${widget.id}`;
-        card.draggable = true;
+        card.draggable = this._editMode;
+
+        // Couleur accent brand par widget (glow hover + fond header)
+        const _widgetAccents = {
+            'meteo':      ['rgba(91,  180, 245, 0.30)', 'rgba(91,  180, 245, 0.06)'],
+            'gcal':       ['rgba(66,  133, 244, 0.30)', 'rgba(66,  133, 244, 0.06)'],
+            'github':     ['rgba(200, 200, 208, 0.22)', 'rgba(200, 200, 208, 0.04)'],
+            'spotify':    ['rgba(29,  185, 84,  0.30)', 'rgba(29,  185, 84,  0.06)'],
+            'twitch':     ['rgba(145, 71,  255, 0.30)', 'rgba(145, 71,  255, 0.06)'],
+            'steam':      ['rgba(198, 212, 223, 0.22)', 'rgba(198, 212, 223, 0.04)'],
+            'rss':        ['rgba(242, 101, 34,  0.30)', 'rgba(242, 101, 34,  0.06)'],
+            'tmdb':       ['rgba(1,   180, 228, 0.30)', 'rgba(1,   180, 228, 0.06)'],
+            'countdown':  ['rgba(124, 106, 247, 0.30)', 'rgba(124, 106, 247, 0.06)'],
+            'tablatures': ['rgba(232, 176, 75,  0.30)', 'rgba(232, 176, 75,  0.06)'],
+        };
+        const [accent, accentBg] = _widgetAccents[widget.id] ?? ['rgba(124, 106, 247, 0.25)', 'rgba(124, 106, 247, 0.05)'];
+        card.style.setProperty('--widget-accent',    accent);
+        card.style.setProperty('--widget-accent-bg', accentBg);
 
         const sizeLabel = { normal: 'N', lg: 'L', xl: 'XL' };
         const currentSize = widget.size ?? 'normal';
@@ -294,6 +370,7 @@ const Dashboard = {
         let dragSrc = null; // position originale pour annulation
 
         grid.addEventListener('dragstart', e => {
+            if (!this._editMode) { e.preventDefault(); return; }
             dragEl = e.target.closest('.widget-card');
             if (!dragEl) return;
             dragSrc = dragEl.nextSibling;
@@ -622,6 +699,117 @@ const Dashboard = {
         document.getElementById('cancel-settings').addEventListener('click', () => this._closeModal());
         document.getElementById('modal-close').addEventListener('click',    () => this._closeModal());
         document.getElementById('modal-overlay').addEventListener('click',  () => this._closeModal());
+    },
+
+    /* --------------------------------------------------
+       Géolocalisation — bouton
+    -------------------------------------------------- */
+    _updateGeoBtn(active) {
+        const btn = document.getElementById('btn-geo');
+        if (!btn) return;
+        btn.classList.toggle('active', active);
+        btn.title = active ? 'Géolocalisation active (cliquer pour désactiver)' : 'Géolocalisation inactive';
+    },
+
+    /* --------------------------------------------------
+       Alertes (erreurs widgets)
+    -------------------------------------------------- */
+    _trackError(widgetId, msg) {
+        const widget = this._widgetList.find(w => w.id === widgetId);
+        this._widgetErrors[widgetId] = { name: widget?.name ?? widgetId, icon: widget?.icon ?? '🔧', msg };
+        this._updateAlertBadge();
+    },
+
+    _clearError(widgetId) {
+        if (!this._widgetErrors[widgetId]) return;
+        delete this._widgetErrors[widgetId];
+        this._updateAlertBadge();
+    },
+
+    _updateAlertBadge() {
+        const errors = Object.values(this._widgetErrors);
+        const badge  = document.getElementById('alert-badge');
+        const btn    = document.getElementById('btn-alerts');
+        if (badge) {
+            badge.textContent = errors.length;
+            badge.classList.toggle('hidden', errors.length === 0);
+        }
+        if (btn) btn.classList.toggle('active', errors.length > 0);
+
+        // Mettre à jour le contenu du dropdown si ouvert
+        const dd = document.getElementById('alert-dropdown');
+        if (dd && !dd.classList.contains('hidden')) this._renderAlertDropdown();
+    },
+
+    _renderAlertDropdown() {
+        const dd     = document.getElementById('alert-dropdown');
+        const errors = Object.values(this._widgetErrors);
+        if (errors.length === 0) {
+            dd.innerHTML = `<div class="alert-ok">✅ Tout fonctionne</div>`;
+        } else {
+            dd.innerHTML = errors.map(e => `
+                <div class="alert-item">
+                    <span class="alert-item-icon">${this._renderIcon(e.icon)}</span>
+                    <div>
+                        <div class="alert-item-name">${this._escHtml(e.name)}</div>
+                        <div class="alert-item-msg">${this._escHtml(e.msg)}</div>
+                    </div>
+                </div>`).join('');
+        }
+    },
+
+    /* --------------------------------------------------
+       Widget Manager
+    -------------------------------------------------- */
+    _openWidgetManager() {
+        const panel = document.getElementById('widget-manager');
+        panel.classList.remove('hidden');
+        this._renderWidgetManager();
+    },
+
+    _closeWidgetManager() {
+        document.getElementById('widget-manager').classList.add('hidden');
+    },
+
+    _renderWidgetManager() {
+        const list = document.getElementById('wm-list');
+        list.innerHTML = this._widgetList.map(w => `
+            <div class="wm-item">
+                <span class="wm-item-icon">${this._renderIcon(w.icon)}</span>
+                <span class="wm-item-name">${this._escHtml(w.name)}</span>
+                <label class="wm-toggle" title="${w.enabled ? 'Désactiver' : 'Activer'}">
+                    <input type="checkbox" data-wm-id="${this._escHtml(w.id)}" ${w.enabled ? 'checked' : ''}>
+                    <span class="wm-toggle-track"></span>
+                </label>
+            </div>`).join('');
+
+        list.querySelectorAll('[data-wm-id]').forEach(cb => {
+            cb.addEventListener('change', async () => {
+                const widget = this._widgetList.find(w => w.id === cb.dataset.wmId);
+                if (widget) await this._toggleWidget(widget, cb.checked);
+            });
+        });
+    },
+
+    async _toggleWidget(widget, enabled) {
+        widget.enabled = enabled;
+        const position = this._widgetList.indexOf(widget);
+
+        await fetch('api/widgets.php?action=layout', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify([{ id: widget.id, position, enabled }]),
+        }).catch(console.error);
+
+        if (enabled) {
+            await this._mountWidget(widget);
+        } else {
+            document.getElementById(`widget-card-${widget.id}`)?.remove();
+            this._clearError(widget.id);
+        }
+
+        const hasCards = document.querySelectorAll('#widgets-grid .widget-card').length > 0;
+        document.getElementById('widgets-empty').classList.toggle('hidden', hasCards);
     },
 
     /* --------------------------------------------------
