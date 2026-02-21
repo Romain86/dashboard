@@ -15,8 +15,8 @@ window.DashboardWidgets.github = {
 
         container.innerHTML = `
             <div class="gh-tabs">
-                <button class="gh-tab ${this._view === 'activity' ? 'gh-tab--active' : ''}" data-view="activity">Activité</button>
                 <button class="gh-tab ${this._view === 'repos'    ? 'gh-tab--active' : ''}" data-view="repos">Dépôts</button>
+                <button class="gh-tab ${this._view === 'activity' ? 'gh-tab--active' : ''}" data-view="activity">Activité</button>
                 ${calTab}
                 <a class="gh-profile" href="https://github.com/${this._esc(username)}" target="_blank" rel="noopener">@${this._esc(username)}</a>
             </div>
