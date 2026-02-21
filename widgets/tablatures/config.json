@@ -1,0 +1,9 @@
+{
+    "id": "tablatures",
+    "name": "Tablatures",
+    "icon": "🎸",
+    "description": "Stockage local de tablatures de guitare",
+    "version": "1.0",
+    "params": [],
+    "refresh_interval": 86400
+}

@@ -100,6 +100,26 @@ try {
             echo json_encode(['success' => true]);
             break;
 
+        // Action CRUD générique — appelle widgets/{id}/mutate.php sans cache
+        case 'mutate':
+            if (!$widgetId || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('Requête invalide');
+            }
+
+            $mutatePath = WIDGETS_PATH . '/' . $widgetId . '/mutate.php';
+            if (!file_exists($mutatePath)) {
+                throw new Exception("Le widget '$widgetId' ne supporte pas les mutations");
+            }
+
+            $input  = json_decode(file_get_contents('php://input'), true) ?? [];
+            $pdo    = $db->getPdo();
+            $result = include $mutatePath;
+
+            $cache->deleteByPrefix('widget_' . $widgetId);
+
+            echo json_encode(['success' => true, 'data' => $result]);
+            break;
+
         default:
             throw new Exception("Action '$action' inconnue");
     }
