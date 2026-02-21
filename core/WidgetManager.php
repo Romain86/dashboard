@@ -48,4 +48,14 @@ class WidgetManager
             })($settings);
         });
     }
+
+    /** Retourne la clé de cache pour un widget (utile pour getCachedAt). */
+    public function getCacheKey(string $widgetId, array $settings): string
+    {
+        $key = 'widget_' . $widgetId;
+        if (isset($settings['_lat'], $settings['_lon'])) {
+            $key .= '_' . round((float) $settings['_lat'], 2) . '_' . round((float) $settings['_lon'], 2);
+        }
+        return $key;
+    }
 }

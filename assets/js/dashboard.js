@@ -21,6 +21,10 @@ const Dashboard = {
     async init() {
         this._startClock();
 
+        // Horodatage de la visite précédente (pour les badges)
+        this._lastVisit = parseInt(localStorage.getItem('dashboard_last_visit') || '0');
+        localStorage.setItem('dashboard_last_visit', Math.floor(Date.now() / 1000));
+
         // Géolocalisation en parallèle du chargement de la liste
         const [widgetList] = await Promise.all([
             this._fetchWidgetList().catch(e => { console.error('Liste widgets :', e); return null; }),
@@ -98,9 +102,9 @@ const Dashboard = {
             url += `&lat=${this._location.lat}&lon=${this._location.lon}`;
         }
         const res  = await fetch(url);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-        return data.data;
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+        return { data: json.data, cache_ts: json.cache_ts ?? 0 };
     },
 
     async _saveSettings(widgetId, values) {
@@ -119,6 +123,12 @@ const Dashboard = {
     async _mountWidget(widget) {
         const grid = document.getElementById('widgets-grid');
         const card = this._createCard(widget);
+
+        // Appliquer la taille sauvegardée
+        if (widget.size && widget.size !== 'normal') {
+            card.classList.add(`widget-card--${widget.size}`);
+        }
+
         grid.appendChild(card);
 
         const content = card.querySelector('.widget-content');
@@ -137,7 +147,7 @@ const Dashboard = {
         this._showSkeleton(contentEl);
 
         try {
-            const data = await this._fetchWidgetData(widgetId);
+            const { data, cache_ts } = await this._fetchWidgetData(widgetId);
             const renderer = window.DashboardWidgets?.[widgetId];
 
             if (renderer && typeof renderer.render === 'function') {
@@ -146,6 +156,9 @@ const Dashboard = {
                 // Renderer par défaut : JSON brut
                 contentEl.innerHTML = `<pre style="font-size:11px;color:var(--text-dim);overflow:auto;">${JSON.stringify(data, null, 2)}</pre>`;
             }
+
+            // Badge de notification : nouvelle donnée depuis la dernière visite ?
+            this._updateBadge(widgetId, cache_ts);
         } catch (err) {
             const msg    = err.message ?? '';
             const msgLow = msg.toLowerCase();
@@ -192,11 +205,21 @@ const Dashboard = {
         const card = document.createElement('div');
         card.className = 'widget-card';
         card.id = `widget-card-${widget.id}`;
+
+        const sizeLabel = { normal: 'N', lg: 'L', xl: 'XL' };
+        const currentSize = widget.size ?? 'normal';
+
         card.innerHTML = `
             <div class="widget-header">
-                <span class="widget-icon">${this._renderIcon(widget.icon)}</span>
+                <div class="widget-icon-wrap">
+                    <span class="widget-icon">${this._renderIcon(widget.icon)}</span>
+                    <span class="widget-badge hidden" id="badge-${widget.id}"></span>
+                </div>
                 <span class="widget-name">${this._escHtml(widget.name)}</span>
                 <div class="widget-actions">
+                    <button class="widget-btn widget-btn-size" title="Taille" data-size="${widget.id}" aria-label="Taille">
+                        ${sizeLabel[currentSize] ?? 'N'}
+                    </button>
                     <button class="widget-btn" title="Rafraîchir" data-refresh="${widget.id}" aria-label="Rafraîchir">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>
@@ -225,7 +248,43 @@ const Dashboard = {
             this._openSettings(widget.id);
         });
 
+        // Size button — cycle N → L → XL → N
+        card.querySelector('[data-size]').addEventListener('click', async (e) => {
+            const btn    = e.currentTarget;
+            const sizes  = ['normal', 'lg', 'xl'];
+            const labels = { normal: 'N', lg: 'L', xl: 'XL' };
+            const cur    = card.dataset.size || 'normal';
+            const next   = sizes[(sizes.indexOf(cur) + 1) % sizes.length];
+
+            card.dataset.size = next;
+            card.classList.remove('widget-card--lg', 'widget-card--xl');
+            if (next !== 'normal') card.classList.add(`widget-card--${next}`);
+            btn.textContent = labels[next];
+
+            await fetch(`api/widgets.php?action=size&widget=${encodeURIComponent(widget.id)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ size: next }),
+            });
+        });
+
+        card.dataset.size = currentSize;
+
         return card;
+    },
+
+    /* --------------------------------------------------
+       Badge de notification
+    -------------------------------------------------- */
+    _updateBadge(widgetId, cacheTs) {
+        const badge = document.getElementById(`badge-${widgetId}`);
+        if (!badge) return;
+
+        if (cacheTs > this._lastVisit) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
     },
 
     _showSkeleton(contentEl) {

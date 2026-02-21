@@ -40,10 +40,20 @@ class Cache
     {
         $file = $this->filePath($key);
         $data = [
+            'cached_at'  => time(),
             'expires_at' => time() + $ttl,
             'payload'    => $value,
         ];
         file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    /** Retourne le timestamp unix de création du cache, ou 0 si inexistant. */
+    public function getCachedAt(string $key): int
+    {
+        $file = $this->filePath($key);
+        if (!file_exists($file)) return 0;
+        $data = json_decode(file_get_contents($file), true);
+        return (int) ($data['cached_at'] ?? filemtime($file));
     }
 
     public function delete(string $key): void

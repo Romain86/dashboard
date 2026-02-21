@@ -47,6 +47,13 @@ class Database
                 updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         ");
+
+        // Migration : ajout de la colonne size si absente
+        try {
+            $this->pdo->exec("ALTER TABLE widget_layout ADD COLUMN size TEXT DEFAULT 'normal'");
+        } catch (PDOException $e) {
+            // Colonne déjà présente — ignoré
+        }
     }
 
     // --- Widget Settings ---
@@ -89,7 +96,7 @@ class Database
     public function getLayout(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT widget_id, position, enabled FROM widget_layout ORDER BY position ASC'
+            'SELECT widget_id, position, enabled, size FROM widget_layout ORDER BY position ASC'
         );
         return $stmt->fetchAll();
     }
@@ -102,6 +109,18 @@ class Database
             ON CONFLICT(widget_id) DO UPDATE SET position = excluded.position, enabled = excluded.enabled, updated_at = excluded.updated_at
         ');
         $stmt->execute([$widgetId, $position, (int) $enabled]);
+    }
+
+    public function saveSize(string $widgetId, string $size): void
+    {
+        $allowed = ['normal', 'lg', 'xl'];
+        $size    = in_array($size, $allowed, true) ? $size : 'normal';
+        $stmt    = $this->pdo->prepare('
+            INSERT INTO widget_layout (widget_id, size, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(widget_id) DO UPDATE SET size = excluded.size, updated_at = excluded.updated_at
+        ');
+        $stmt->execute([$widgetId, $size]);
     }
 
     public function getPdo(): PDO

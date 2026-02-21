@@ -81,9 +81,11 @@ body {
     align-items: start;
 }
 
-/* Widget large (2 colonnes) */
+/* Tailles des widgets */
 @media (min-width: 641px) {
-    .widget-card--wide { grid-column: span 2; }
+    .widget-card--wide,
+    .widget-card--lg  { grid-column: span 2; }
+    .widget-card--xl  { grid-column: 1 / -1; }
 }
 
 .widgets-empty {
@@ -126,10 +128,36 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
+/* Icône avec badge de notification */
+.widget-icon-wrap {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
 .widget-icon {
     font-size: 18px;
     line-height: 1;
-    flex-shrink: 0;
+}
+
+.widget-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 9px;
+    height: 9px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid var(--bg-surface);
+    animation: badge-pulse 2.5s ease-in-out infinite;
+}
+
+.widget-badge.hidden { display: none; }
+
+@keyframes badge-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1);   }
+    50%       { opacity: 0.5; transform: scale(0.75); }
 }
 
 .widget-name {
@@ -170,6 +198,16 @@ body {
 
 .widget-btn.spinning svg {
     animation: spin 1s linear infinite;
+}
+
+/* Bouton taille — affiche une lettre (N/L/XL) */
+.widget-btn-size {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    width: 28px;
+    height: 28px;
+    line-height: 1;
 }
 
 .widget-content {

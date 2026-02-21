@@ -29,6 +29,7 @@ try {
                     'icon'     => $config['icon'],
                     'enabled'  => isset($layoutMap[$id]) ? (bool) $layoutMap[$id]['enabled'] : true,
                     'position' => $layoutMap[$id]['position'] ?? 999,
+                    'size'     => $layoutMap[$id]['size']     ?? 'normal',
                 ];
             }
 
@@ -52,9 +53,11 @@ try {
                 $settings['_lon'] = (float) $_GET['lon'];
             }
 
-            $data = $manager->callWidget($widgetId, $settings, $cache);
+            $data     = $manager->callWidget($widgetId, $settings, $cache);
+            $cacheKey = $manager->getCacheKey($widgetId, $settings);
+            $cacheTs  = $cache->getCachedAt($cacheKey);
 
-            echo json_encode(['success' => true, 'data' => $data]);
+            echo json_encode(['success' => true, 'data' => $data, 'cache_ts' => $cacheTs]);
             break;
 
         // Récupérer les paramètres d'un widget
@@ -118,6 +121,18 @@ try {
             $cache->deleteByPrefix('widget_' . $widgetId);
 
             echo json_encode(['success' => true, 'data' => $result]);
+            break;
+
+        // Sauvegarder la taille d'un widget
+        case 'size':
+            if (!$widgetId || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('Requête invalide');
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true) ?? [];
+            $db->saveSize($widgetId, $input['size'] ?? 'normal');
+
+            echo json_encode(['success' => true]);
             break;
 
         default:
