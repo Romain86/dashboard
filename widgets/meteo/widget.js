@@ -8,6 +8,9 @@ window.DashboardWidgets.meteo = {
         const slides = [{ label: 'Maintenant', d: data }];
         if (data.middle)   slides.push({ label: data.middle.label,   d: data.middle });
         if (data.tomorrow) slides.push({ label: 'Demain',            d: data.tomorrow });
+        if (data.forecast?.length) {
+            for (const day of data.forecast) slides.push({ label: day.label, d: day });
+        }
 
         const n   = slides.length;
         const pct = 100 / n;

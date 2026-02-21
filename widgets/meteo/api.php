@@ -142,6 +142,49 @@ if ($tomorrowItems) {
     ];
 }
 
+// --- J+2, J+3, J+4 ---
+$frDays = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+$forecast = [];
+for ($d = 2; $d <= 4; $d++) {
+    $targetDate = date('Y-m-d', strtotime("+{$d} days"));
+    $dayItems   = array_values(array_filter(
+        $forecastList,
+        fn($item) => strpos($item['dt_txt'], $targetDate) === 0
+    ));
+    if (!$dayItems) continue;
+
+    $temps   = array_column(array_column($dayItems, 'main'), 'temp');
+    $midday  = $dayItems[0];
+    $minDiff = PHP_INT_MAX;
+    foreach ($dayItems as $item) {
+        $hour = (int) substr($item['dt_txt'], 11, 2);
+        $diff = abs($hour - 12);
+        if ($diff < $minDiff) { $minDiff = $diff; $midday = $item; }
+    }
+
+    $dayOfWeek = (int) date('w', strtotime($targetDate));
+    $sunInfo   = date_sun_info(
+        strtotime($targetDate),
+        (float) $data['coord']['lat'],
+        (float) $data['coord']['lon']
+    );
+    $tzOffset = (int) $data['timezone'];
+
+    $forecast[] = [
+        'label'       => $frDays[$dayOfWeek],
+        'temp'        => (int) round($midday['main']['temp']),
+        'feels_like'  => (int) round($midday['main']['feels_like']),
+        'temp_min'    => (int) round(min($temps)),
+        'temp_max'    => (int) round(max($temps)),
+        'humidity'    => $midday['main']['humidity'],
+        'wind_speed'  => (int) round($midday['wind']['speed'] * 3.6),
+        'description' => ucfirst($midday['weather'][0]['description']),
+        'icon'        => $midday['weather'][0]['icon'],
+        'sunrise'     => gmdate('H:i', $sunInfo['sunrise'] + $tzOffset),
+        'sunset'      => gmdate('H:i', $sunInfo['sunset']  + $tzOffset),
+    ];
+}
+
 return [
     'city'        => $data['name'],
     'country'     => $data['sys']['country'],
@@ -157,4 +200,5 @@ return [
     'sunset'      => gmdate('H:i', $data['sys']['sunset']  + $data['timezone']),
     'middle'      => $middle,
     'tomorrow'    => $tomorrow,
+    'forecast'    => $forecast,
 ];
