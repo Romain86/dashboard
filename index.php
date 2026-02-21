@@ -7,7 +7,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . '/assets/css/dashboard.css') ?>">
+    <!-- CSS modulaire -->
+    <link rel="stylesheet" href="assets/css/tokens.css?v=<?= filemtime(__DIR__ . '/assets/css/tokens.css') ?>">
+    <link rel="stylesheet" href="assets/css/header.css?v=<?= filemtime(__DIR__ . '/assets/css/header.css') ?>">
+    <link rel="stylesheet" href="assets/css/grid.css?v=<?= filemtime(__DIR__ . '/assets/css/grid.css') ?>">
+    <link rel="stylesheet" href="assets/css/card.css?v=<?= filemtime(__DIR__ . '/assets/css/card.css') ?>">
+    <link rel="stylesheet" href="assets/css/modal.css?v=<?= filemtime(__DIR__ . '/assets/css/modal.css') ?>">
+    <link rel="stylesheet" href="assets/css/drawers.css?v=<?= filemtime(__DIR__ . '/assets/css/drawers.css') ?>">
+    <link rel="stylesheet" href="assets/css/fullscreen.css?v=<?= filemtime(__DIR__ . '/assets/css/fullscreen.css') ?>">
+    <link rel="stylesheet" href="assets/css/utilities.css?v=<?= filemtime(__DIR__ . '/assets/css/utilities.css') ?>">
 </head>
 <body>
 
@@ -150,7 +158,18 @@
         </aside>
     </div>
 
+    <!-- JS modulaire — core + modules (ordre de chargement important) -->
     <script src="assets/js/dashboard.js?v=<?= filemtime(__DIR__ . '/assets/js/dashboard.js') ?>"></script>
+    <script src="assets/js/modules/utils.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/utils.js') ?>"></script>
+    <script src="assets/js/modules/api.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/api.js') ?>"></script>
+    <script src="assets/js/modules/clock.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/clock.js') ?>"></script>
+    <script src="assets/js/modules/geolocation.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/geolocation.js') ?>"></script>
+    <script src="assets/js/modules/header.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/header.js') ?>"></script>
+    <script src="assets/js/modules/widgets.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/widgets.js') ?>"></script>
+    <script src="assets/js/modules/dragdrop.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/dragdrop.js') ?>"></script>
+    <script src="assets/js/modules/settings.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/settings.js') ?>"></script>
+    <script src="assets/js/modules/alerts.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/alerts.js') ?>"></script>
+    <script src="assets/js/modules/panels.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/panels.js') ?>"></script>
 
 </body>
 </html>

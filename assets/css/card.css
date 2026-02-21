@@ -1,0 +1,220 @@
+/* ============================================================
+ *  Composant : Widget Card — Carte de widget
+ *  dashboard/assets/css/card.css
+ *
+ *  Styles de la carte : en-tête, icône, badge de notification,
+ *  drag handle, boutons d'action, skeleton loader,
+ *  états d'erreur et de configuration.
+ * ============================================================ */
+
+/* ---- Carte ---- */
+.widget-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.065) 0%, rgba(255, 255, 255, 0.020) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: var(--radius);
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        0 2px 16px rgba(0, 0, 0, 0.30);
+    transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    display: flex;
+    flex-direction: column;
+    max-height: 480px;
+}
+
+.widget-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 8px 32px rgba(0, 0, 0, 0.45),
+        0 0 0 1px var(--widget-accent, rgba(124, 106, 247, 0.25));
+    transform: translateY(-2px);
+}
+
+/* ---- En-tête de carte ---- */
+.widget-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, var(--widget-accent-bg, rgba(255, 255, 255, 0.04)) 0%, transparent 100%);
+}
+
+/* ---- Icône + badge de notification ---- */
+.widget-icon-wrap {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.widget-icon {
+    font-size: 20px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.widget-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+    flex-shrink: 0;
+}
+
+.widget-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 9px;
+    height: 9px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid var(--bg-surface);
+    animation: badge-pulse 2.5s ease-in-out infinite;
+}
+
+.widget-badge.hidden { display: none; }
+
+@keyframes badge-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1);   }
+    50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+/* ---- Handle de drag ---- */
+.widget-drag-handle {
+    color: var(--muted);
+    cursor: grab;
+    padding: 0 4px 0 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity var(--transition);
+    user-select: none;
+}
+.widget-card:hover .widget-drag-handle { opacity: 1; }
+
+/* ---- État pendant le drag ---- */
+.widget-card.dragging {
+    opacity: 0.35;
+    cursor: grabbing;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+/* ---- Nom du widget ---- */
+.widget-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    color: var(--text-dim);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+}
+
+/* ---- Boutons d'action ---- */
+.widget-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.widget-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+    font-size: 14px;
+}
+
+.widget-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+}
+
+.widget-btn.spinning svg {
+    animation: spin 1s linear infinite;
+}
+
+/* Bouton taille — affiche une lettre (N/L/XL) */
+.widget-btn-size {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    width: 28px;
+    height: 28px;
+    line-height: 1;
+}
+
+/* ---- Contenu du widget ---- */
+.widget-content {
+    padding: 18px 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ---- Skeleton loader (chargement) ---- */
+.skeleton {
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--bg-hover) 25%, rgba(255,255,255,0.08) 50%, var(--bg-hover) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line {
+    height: 12px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- État erreur ---- */
+.widget-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    text-align: center;
+    color: var(--text-dim);
+}
+
+.widget-error .error-icon { font-size: 28px; }
+.widget-error .error-msg  { font-size: 13px; }
+
+/* ---- État configuration requise ---- */
+.widget-setup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    text-align: center;
+    color: var(--text-dim);
+}
+
+.widget-setup .setup-icon { font-size: 28px; }
+.widget-setup .setup-msg  { font-size: 13px; }

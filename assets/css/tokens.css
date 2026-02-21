@@ -1,0 +1,48 @@
+/* ============================================================
+ *  Base : Design Tokens + Reset
+ *  dashboard/assets/css/tokens.css
+ *
+ *  Variables CSS globales, reset et styles du body.
+ *  Ce fichier doit être chargé EN PREMIER.
+ * ============================================================ */
+
+:root {
+    --bg-base:    #0f0f13;
+    --bg-surface: #16161d;
+    --bg-card:    rgba(255, 255, 255, 0.04);
+    --bg-hover:   rgba(255, 255, 255, 0.07);
+    --border:     rgba(255, 255, 255, 0.08);
+    --border-focus: rgba(124, 106, 247, 0.6);
+    --accent:     #7c6af7;
+    --accent-dim: rgba(124, 106, 247, 0.15);
+    --text:       #e2e2e8;
+    --text-dim:   #9898a6;
+    --muted:      #555560;
+    --danger:     #f56565;
+    --success:    #68d391;
+    --radius:     12px;
+    --radius-sm:  8px;
+    --shadow:     0 4px 24px rgba(0, 0, 0, 0.4);
+    --transition: 180ms ease;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+    min-height: 100%;
+    background-color: var(--bg-base);
+    background-image:
+        radial-gradient(ellipse 70% 55% at 10% -5%,  rgba(124, 106, 247, 0.20), transparent 55%),
+        radial-gradient(ellipse 55% 45% at 90% 100%, rgba(56, 120, 240, 0.12),  transparent 55%),
+        radial-gradient(ellipse 60% 30% at 50%  -8%, rgba(124, 106, 247, 0.07), transparent 50%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

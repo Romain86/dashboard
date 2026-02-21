@@ -1,0 +1,52 @@
+/* ============================================================
+ *  Layout : Grille principale + mode édition
+ *  dashboard/assets/css/grid.css
+ *
+ *  Mise en page de la zone de contenu, grille CSS auto-fill
+ *  pour les widgets, tailles (N/L/XL), état vide.
+ * ============================================================ */
+
+/* ---- Mode édition (drag handle + bouton taille) ---- */
+body:not(.edit-mode) .widget-drag-handle { display: none !important; }
+body:not(.edit-mode) .widget-btn-size    { display: none !important; }
+body.edit-mode .widget-drag-handle       { opacity: 1; }
+
+/* ---- Zone principale ---- */
+.dashboard-main {
+    padding: 32px 40px;
+    max-width: 2800px;
+    margin: 0 auto;
+}
+
+/* ---- Grille des widgets ---- */
+.widgets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    align-items: stretch;
+}
+
+/* Tailles des widgets (lg = 2 colonnes, xl = pleine largeur) */
+@media (min-width: 641px) {
+    .widget-card--wide,
+    .widget-card--lg  { grid-column: span 2; }
+    .widget-card--xl  { grid-column: 1 / -1; }
+}
+
+/* ---- État vide ---- */
+.widgets-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-dim);
+}
+
+.widgets-empty p { margin-bottom: 8px; }
+.widgets-empty .muted { color: var(--muted); font-size: 13px; }
+.widgets-empty code {
+    background: var(--bg-hover);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}

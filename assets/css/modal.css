@@ -1,0 +1,273 @@
+/* ============================================================
+ *  Composant : Modal + Formulaire de paramètres
+ *  dashboard/assets/css/modal.css
+ *
+ *  Modale centrée, en-tête, formulaire de configuration,
+ *  champs texte/password/textarea, dropdown custom,
+ *  multiselect (checkboxes), boutons d'action.
+ * ============================================================ */
+
+/* ---- Boutons génériques ---- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background var(--transition), border-color var(--transition), opacity var(--transition);
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.btn-primary:hover { opacity: 0.85; }
+
+.btn-secondary {
+    background: var(--bg-hover);
+    color: var(--text-dim);
+    border-color: var(--border);
+}
+
+.btn-secondary:hover {
+    color: var(--text);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+/* ---- Modale ---- */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.hidden { display: none; }
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    z-index: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: 16px;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-icon { font-size: 20px; }
+
+.modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition), color var(--transition);
+    line-height: 1;
+}
+
+.modal-close:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ---- Formulaire de paramètres ---- */
+.settings-form {
+    padding: 20px;
+}
+
+.settings-fields { display: flex; flex-direction: column; gap: 16px; }
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.field-required::after {
+    content: ' *';
+    color: var(--danger);
+}
+
+/* ---- Champs texte / password / textarea ---- */
+.field-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.field-input:focus {
+    border-color: var(--border-focus);
+    background: var(--accent-dim);
+}
+
+.field-input::placeholder { color: var(--muted); }
+
+.field-textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+/* ---- Dropdown custom (remplace <select> natif) ---- */
+.field-custom-select {
+    position: relative;
+    user-select: none;
+}
+
+.field-cs-current {
+    width: 100%;
+    padding: 9px 32px 9px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239898a6' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.field-cs-current:hover,
+.field-custom-select.open .field-cs-current {
+    border-color: var(--border-focus);
+}
+
+.field-custom-select.open .field-cs-current {
+    background: var(--accent-dim);
+}
+
+.field-cs-dropdown {
+    display: none;
+    margin-top: 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.field-custom-select.open .field-cs-dropdown { display: block; }
+
+.field-cs-option {
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+}
+
+.field-cs-option:hover       { background: var(--bg-hover); color: var(--text); }
+.field-cs-option.is-selected  { color: var(--accent); }
+
+/* ---- Multiselect (checkboxes) ---- */
+.field-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.field-checkboxes:focus-within {
+    border-color: var(--border-focus);
+    background: var(--accent-dim);
+}
+
+.field-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+}
+
+.field-checkbox-item input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* ---- Actions du formulaire ---- */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+}

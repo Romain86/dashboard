@@ -1,0 +1,29 @@
+/* ============================================================
+ *  Utilitaires + Scrollbars + Responsive
+ *  dashboard/assets/css/utilities.css
+ *
+ *  Classes utilitaires, personnalisation des scrollbars,
+ *  et media queries pour mobile.
+ * ============================================================ */
+
+/* ---- Scrollbars ---- */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.20); }
+
+/* ---- Classes utilitaires ---- */
+.hidden { display: none !important; }
+.muted  { color: var(--muted); }
+
+/* ---- Responsive (mobile < 640px) ---- */
+@media (max-width: 640px) {
+    .dashboard-header  { padding: 0 16px; height: 56px; }
+    .dashboard-title   { display: none; }
+    .clock-time        { font-size: 18px; }
+    .dashboard-main    { padding: 20px 16px; }
+    .widgets-grid      { grid-template-columns: 1fr; gap: 16px; }
+}

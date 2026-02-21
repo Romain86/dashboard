@@ -1,0 +1,22 @@
+/* ============================================================
+ *  Mode : Plein écran
+ *  dashboard/assets/css/fullscreen.css
+ *
+ *  Header fixe en mode plein écran avec auto-hide
+ *  après 2 secondes d'inactivité de la souris.
+ * ============================================================ */
+
+.is-fullscreen .dashboard-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 200;
+    transition: opacity 300ms ease, transform 300ms ease;
+}
+.is-fullscreen .dashboard-header.fs-hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+}
+.is-fullscreen .dashboard-main {
+    padding-top: 96px;
+}
