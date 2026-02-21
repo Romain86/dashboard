@@ -6,7 +6,6 @@ window.DashboardWidgets.github = {
 
     render(data, container) {
         this._injectStyles();
-        container.style.maxHeight = '400px';
         container.style.overflowY = 'auto';
 
         const { events, repos, username } = data;

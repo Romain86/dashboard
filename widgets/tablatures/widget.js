@@ -9,7 +9,6 @@ window.DashboardWidgets.tablatures = {
         this._injectStyles();
         this._container = container;
         this._tabs = data.tabs ?? [];
-        container.style.maxHeight = '400px';
         container.style.overflowY = 'auto';
         this._showList();
     },

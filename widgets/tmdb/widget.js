@@ -5,7 +5,6 @@ window.DashboardWidgets.tmdb = {
     render(data, container) {
         this._injectStyles();
         container.closest('.widget-card')?.classList.add('widget-card--wide');
-        container.style.maxHeight  = '400px';
         container.style.overflowY  = 'auto';
 
         const { items, filter, content_types } = data;
