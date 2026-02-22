@@ -12,6 +12,9 @@ Object.assign(Dashboard, {
     _notifications: [],
 
     _initNotifications() {
+        // Injecter les styles immédiatement (sinon le dropdown n'a pas de CSS)
+        this._notifInjectStyles();
+
         // Charger l'historique depuis localStorage
         try {
             this._notifications = JSON.parse(localStorage.getItem('db_notifications') || '[]');

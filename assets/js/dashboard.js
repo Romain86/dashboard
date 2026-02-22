@@ -75,6 +75,10 @@ const Dashboard = {
 
         const enabled = this._widgetList.filter(w => w.enabled);
 
+        // Charger les notifications existantes AVANT le montage des widgets
+        // (sinon _processWidgetNotifications les traite toutes comme nouvelles)
+        this._initNotifications();
+
         if (enabled.length === 0) {
             document.getElementById('widgets-empty').classList.remove('hidden');
         } else {
@@ -85,7 +89,6 @@ const Dashboard = {
         this._bindModal();
         this._initDragDrop();
         this._initKeyboard();
-        this._initNotifications();
         this._initAutoRefresh();
 
         // Fermer les dropdowns custom au clic en dehors

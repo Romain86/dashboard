@@ -1,0 +1,9 @@
+{
+    "id": "phone",
+    "name": "Phone",
+    "icon": "📱",
+    "description": "Notifications du téléphone via Mobile connecté (Phone Link)",
+    "version": "1.0",
+    "params": [],
+    "refresh_interval": 120
+}

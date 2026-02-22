@@ -60,9 +60,18 @@ try {
                 $cache->deleteByPrefix('widget_' . $widgetId);
             }
 
-            $data     = $manager->callWidget($widgetId, $settings, $cache);
-            $cacheKey = $manager->getCacheKey($widgetId, $settings);
-            $cacheTs  = $cache->getCachedAt($cacheKey);
+            // Timestamp avant l'appel (pour détecter données fraîches vs cache)
+            $cacheKey   = $manager->getCacheKey($widgetId, $settings);
+            $preCacheTs = $cache->getCachedAt($cacheKey);
+
+            $data    = $manager->callWidget($widgetId, $settings, $cache);
+            $cacheTs = $cache->getCachedAt($cacheKey);
+
+            // Ne passer _notifications que sur données fraîches (pas du cache)
+            // Évite de re-déclencher les mêmes notifications à chaque render
+            if ($preCacheTs === $cacheTs && is_array($data) && isset($data['_notifications'])) {
+                unset($data['_notifications']);
+            }
 
             echo json_encode(['success' => true, 'data' => $data, 'cache_ts' => $cacheTs]);
             break;
