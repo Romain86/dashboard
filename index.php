@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="assets/css/modal.css?v=<?= filemtime(__DIR__ . '/assets/css/modal.css') ?>">
     <link rel="stylesheet" href="assets/css/drawers.css?v=<?= filemtime(__DIR__ . '/assets/css/drawers.css') ?>">
     <link rel="stylesheet" href="assets/css/fullscreen.css?v=<?= filemtime(__DIR__ . '/assets/css/fullscreen.css') ?>">
+    <link rel="stylesheet" href="assets/css/tabs.css?v=<?= filemtime(__DIR__ . '/assets/css/tabs.css') ?>">
     <link rel="stylesheet" href="assets/css/utilities.css?v=<?= filemtime(__DIR__ . '/assets/css/utilities.css') ?>">
 </head>
 <body>
@@ -61,6 +62,17 @@
             </button>
 
             <div class="header-btn-wrap">
+                <button id="btn-notif" class="header-btn" title="Notifications" aria-label="Notifications">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22c1.1 0 2-.9 2-2H10c0 1.1.9 2 2 2z"/>
+                        <path d="M18 16v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                    </svg>
+                </button>
+                <span id="notif-badge" class="notif-badge hidden">0</span>
+                <div id="notif-dropdown" class="notif-dropdown hidden"></div>
+            </div>
+
+            <div class="header-btn-wrap">
                 <button id="btn-alerts" class="header-btn" title="Alertes" aria-label="Alertes">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -97,6 +109,8 @@
         </div>
 
     </header>
+
+    <nav id="tab-bar" class="tab-bar"></nav>
 
     <main class="dashboard-main">
         <div id="widgets-grid" class="widgets-grid">
@@ -165,10 +179,13 @@
     <script src="assets/js/modules/clock.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/clock.js') ?>"></script>
     <script src="assets/js/modules/geolocation.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/geolocation.js') ?>"></script>
     <script src="assets/js/modules/header.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/header.js') ?>"></script>
+    <script src="assets/js/modules/tabs.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/tabs.js') ?>"></script>
     <script src="assets/js/modules/widgets.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/widgets.js') ?>"></script>
     <script src="assets/js/modules/dragdrop.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/dragdrop.js') ?>"></script>
     <script src="assets/js/modules/settings.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/settings.js') ?>"></script>
     <script src="assets/js/modules/alerts.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/alerts.js') ?>"></script>
+    <script src="assets/js/modules/notifications.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/notifications.js') ?>"></script>
+    <script src="assets/js/modules/keyboard.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/keyboard.js') ?>"></script>
     <script src="assets/js/modules/panels.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/panels.js') ?>"></script>
 
 </body>

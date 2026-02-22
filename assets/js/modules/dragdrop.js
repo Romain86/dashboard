@@ -63,7 +63,8 @@ Object.assign(Dashboard, {
             enabled:  true,
         }));
 
-        await fetch('api/widgets.php?action=layout', {
+        const tab = this._currentTab || 1;
+        await fetch(`api/widgets.php?action=layout&tab=${tab}`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(layout),

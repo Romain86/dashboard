@@ -8,9 +8,10 @@
 
 Object.assign(Dashboard, {
 
-    /** Récupère la liste de tous les widgets (activés ou non). */
+    /** Récupère la liste de tous les widgets (activés ou non) pour l'onglet courant. */
     async _fetchWidgetList() {
-        const res  = await fetch('api/widgets.php?action=list');
+        const tab  = this._currentTab || 1;
+        const res  = await fetch(`api/widgets.php?action=list&tab=${tab}`);
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
         return data.widgets;

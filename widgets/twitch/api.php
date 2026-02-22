@@ -60,6 +60,13 @@ if (isset($data['error'])) {
 
 $streams = $data['data'] ?? [];
 
+// Notifications pour les streams en cours
+$_notifications = array_map(fn($s) => [
+    'id'      => 'live_' . $s['user_login'],
+    'title'   => $s['user_name'] . ' est en live !',
+    'message' => $s['game_name'] ?: 'Jeu inconnu',
+], $streams);
+
 return [
     'streams' => array_map(fn($s) => [
         'user_name'    => $s['user_name'],
@@ -71,7 +78,8 @@ return [
         'url'          => 'https://twitch.tv/' . $s['user_login'],
         'started_at'   => $s['started_at'],
     ], $streams),
-    'count' => count($streams),
+    'count'          => count($streams),
+    '_notifications' => $_notifications,
 ];
 
 // -------------------------------------------------------

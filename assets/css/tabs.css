@@ -1,0 +1,92 @@
+/* ============================================================
+ *  Composant : Tab Bar
+ *  dashboard/assets/css/tabs.css
+ * ============================================================ */
+
+.tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 40px;
+    height: 38px;
+    background: rgba(15, 15, 19, 0.6);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+    padding: 6px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--transition), border-color var(--transition), background var(--transition);
+    border-radius: 0;
+    line-height: 1;
+}
+
+.tab-btn:hover {
+    color: var(--text);
+    background: var(--bg-hover);
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.tab-btn-add {
+    color: var(--muted);
+    font-size: 16px;
+    width: 30px;
+    padding: 4px 0;
+    display: none;
+}
+
+.edit-mode .tab-btn-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tab-btn-add:hover {
+    color: var(--accent);
+}
+
+/* Contexte menu (renommer/supprimer) */
+.tab-ctx {
+    position: fixed;
+    z-index: 400;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    padding: 4px 0;
+    min-width: 140px;
+}
+.tab-ctx.hidden { display: none; }
+
+.tab-ctx-item {
+    display: block; width: 100%;
+    padding: 8px 14px;
+    background: none; border: none;
+    color: var(--text-dim);
+    font-family: inherit; font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+}
+.tab-ctx-item:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+}
+.tab-ctx-item--danger:hover {
+    color: var(--danger);
+}

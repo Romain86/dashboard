@@ -185,6 +185,29 @@ for ($d = 2; $d <= 4; $d++) {
     ];
 }
 
+// --- Qualité de l'air (AQI) ---
+$aqi = null;
+$aqiLat = $data['coord']['lat'];
+$aqiLon = $data['coord']['lon'];
+$aqiUrl = sprintf(
+    'https://api.openweathermap.org/data/2.5/air_pollution?lat=%s&lon=%s&appid=%s',
+    $aqiLat, $aqiLon, urlencode($apiKey)
+);
+$aqiResponse = @file_get_contents($aqiUrl, false, $ctx);
+if ($aqiResponse !== false) {
+    $aqiData  = json_decode($aqiResponse, true);
+    $aqiValue = $aqiData['list'][0]['main']['aqi'] ?? null;
+    if ($aqiValue !== null) {
+        $aqiLabels = [1 => 'Bon', 2 => 'Correct', 3 => 'Modéré', 4 => 'Mauvais', 5 => 'Très mauvais'];
+        $aqiColors = [1 => 'green', 2 => 'yellow', 3 => 'orange', 4 => 'red', 5 => 'purple'];
+        $aqi = [
+            'value' => $aqiValue,
+            'label' => $aqiLabels[$aqiValue] ?? 'Inconnu',
+            'color' => $aqiColors[$aqiValue] ?? 'gray',
+        ];
+    }
+}
+
 return [
     'city'        => $data['name'],
     'country'     => $data['sys']['country'],
@@ -201,4 +224,5 @@ return [
     'middle'      => $middle,
     'tomorrow'    => $tomorrow,
     'forecast'    => $forecast,
+    'aqi'         => $aqi,
 ];

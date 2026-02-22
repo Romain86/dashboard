@@ -15,11 +15,14 @@
  *    4. modules/clock.js
  *    5. modules/geolocation.js
  *    6. modules/header.js
- *    7. modules/widgets.js
- *    8. modules/dragdrop.js
- *    9. modules/settings.js
- *   10. modules/alerts.js
- *   11. modules/panels.js
+ *    7. modules/tabs.js
+ *    8. modules/widgets.js
+ *    9. modules/dragdrop.js
+ *   10. modules/settings.js
+ *   11. modules/alerts.js
+ *   12. modules/notifications.js
+ *   13. modules/keyboard.js
+ *   14. modules/panels.js
  * ============================================================ */
 
 const Dashboard = {
@@ -52,6 +55,14 @@ const Dashboard = {
         this._lastVisit = parseInt(localStorage.getItem('dashboard_last_visit') || '0');
         localStorage.setItem('dashboard_last_visit', Math.floor(Date.now() / 1000));
 
+        // Charger les onglets et restaurer le dernier actif
+        await this._loadTabs();
+        this._currentTab = parseInt(localStorage.getItem('db_current_tab') || '1');
+        if (!this._tabs.find(t => t.id === this._currentTab)) {
+            this._currentTab = this._tabs[0]?.id || 1;
+        }
+        this._renderTabBar();
+
         // Géolocalisation en parallèle du chargement de la liste
         const [widgetList] = await Promise.all([
             this._fetchWidgetList().catch(e => { console.error('Liste widgets :', e); return null; }),
@@ -65,14 +76,15 @@ const Dashboard = {
 
         if (enabled.length === 0) {
             document.getElementById('widgets-empty').classList.remove('hidden');
-            return;
+        } else {
+            // Monter tous les widgets en parallèle
+            await Promise.all(enabled.map(w => this._mountWidget(w)));
         }
-
-        // Monter tous les widgets en parallèle
-        await Promise.all(enabled.map(w => this._mountWidget(w)));
 
         this._bindModal();
         this._initDragDrop();
+        this._initKeyboard();
+        this._initNotifications();
 
         // Fermer les dropdowns custom au clic en dehors
         document.addEventListener('click', () => {

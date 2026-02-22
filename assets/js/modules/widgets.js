@@ -50,6 +50,7 @@ Object.assign(Dashboard, {
 
             this._updateBadge(widgetId, cache_ts);
             this._clearError(widgetId);
+            this._processWidgetNotifications(widgetId, data);
         } catch (err) {
             const msg    = err.message ?? '';
             const msgLow = msg.toLowerCase();

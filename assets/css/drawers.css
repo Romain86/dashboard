@@ -202,3 +202,31 @@
     background: rgba(124, 106, 247, 0.12);
     border-color: var(--accent);
 }
+
+/* ---- Section Sauvegarde (import/export) ---- */
+.cp-backup {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.cp-backup-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+}
+.cp-backup-actions {
+    display: flex;
+    gap: 8px;
+}
+.cp-btn-import-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+.cp-backup-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+}

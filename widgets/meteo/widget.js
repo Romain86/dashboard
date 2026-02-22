@@ -80,6 +80,18 @@ window.DashboardWidgets.meteo = {
                 <span class="meteo-cell-value">${this._esc(d.sunrise)} — ${this._esc(d.sunset)}</span>
             </div>`;
         }
+        if (d.aqi) {
+            const aqiColors = { green: '#68d391', yellow: '#f6e05e', orange: '#f6ad55', red: '#f56565', purple: '#9f7aea' };
+            const bg = aqiColors[d.aqi.color] || '#555';
+            gridCells += `
+            <div class="meteo-cell">
+                <span class="meteo-cell-label">Qualité de l'air</span>
+                <span class="meteo-cell-value">
+                    <span class="meteo-aqi-badge" style="background:${bg}">${d.aqi.value}/5</span>
+                    ${this._esc(d.aqi.label)}
+                </span>
+            </div>`;
+        }
 
         return `
             <div class="meteo">
@@ -238,6 +250,17 @@ window.DashboardWidgets.meteo = {
             .meteo-dot.active {
                 background: #7c6af7;
                 transform: scale(1.3);
+            }
+
+            .meteo-aqi-badge {
+                display: inline-block;
+                padding: 1px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #000;
+                margin-right: 4px;
+                line-height: 1.4;
             }
         `;
         document.head.appendChild(style);

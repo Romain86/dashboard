@@ -51,7 +51,8 @@ Object.assign(Dashboard, {
         widget.enabled = enabled;
         const position = this._widgetList.indexOf(widget);
 
-        await fetch('api/widgets.php?action=layout', {
+        const tab = this._currentTab || 1;
+        await fetch(`api/widgets.php?action=layout&tab=${tab}`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify([{ id: widget.id, position, enabled }]),
@@ -109,7 +110,22 @@ Object.assign(Dashboard, {
     /** Rend la liste des widgets avec leur statut de configuration. */
     _renderConfigPanel(items) {
         const list = document.getElementById('cp-list');
-        list.innerHTML = items.map(({ widget: w, status }) => {
+
+        // Section Sauvegarde (import/export)
+        const backupHtml = `
+            <div class="cp-backup">
+                <div class="cp-backup-title">Sauvegarde</div>
+                <div class="cp-backup-actions">
+                    <button class="cp-btn" id="cp-export">Exporter</button>
+                    <label class="cp-btn cp-btn-import-label">
+                        Importer
+                        <input type="file" accept=".json" id="cp-import" hidden>
+                    </label>
+                </div>
+                <div class="cp-backup-note">Le fichier contient vos clés API.</div>
+            </div>`;
+
+        list.innerHTML = backupHtml + items.map(({ widget: w, status }) => {
             const statusHtml = status === 'ok'
                 ? '<span class="cp-status cp-status-ok">✓ OK</span>'
                 : status === 'warn'
@@ -130,6 +146,31 @@ Object.assign(Dashboard, {
             btn.addEventListener('click', () => {
                 this._openSettings(btn.dataset.cpId);
             });
+        });
+
+        // Export
+        document.getElementById('cp-export')?.addEventListener('click', () => {
+            window.location = 'api/widgets.php?action=export';
+        });
+
+        // Import
+        document.getElementById('cp-import')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                const res = await fetch('api/widgets.php?action=import', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(data),
+                });
+                const json = await res.json();
+                if (json.success) location.reload();
+                else alert('Erreur : ' + (json.error || 'Import échoué'));
+            } catch (err) {
+                alert('Fichier invalide : ' + err.message);
+            }
         });
     },
 });
