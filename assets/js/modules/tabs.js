@@ -80,9 +80,27 @@ Object.assign(Dashboard, {
         this._currentTab = tabId;
         localStorage.setItem('db_current_tab', String(tabId));
 
-        // Retirer toutes les cartes widget
+        // Stopper l'auto-refresh avant le switch
+        this._stopAllAutoRefresh();
+
+        // Animer la sortie des cartes puis les retirer
         const grid = document.getElementById('widgets-grid');
-        grid.querySelectorAll('.widget-card').forEach(c => c.remove());
+        const cards = grid.querySelectorAll('.widget-card');
+
+        if (cards.length > 0) {
+            const exits = Array.from(cards).map((card, i) => new Promise(resolve => {
+                card.style.animationDelay = `${i * 30}ms`;
+                card.classList.add('widget-card--exiting');
+                card.addEventListener('animationend', () => { card.remove(); resolve(); }, { once: true });
+            }));
+            await Promise.race([
+                Promise.all(exits),
+                new Promise(resolve => setTimeout(() => {
+                    grid.querySelectorAll('.widget-card').forEach(c => c.remove());
+                    resolve();
+                }, 400)),
+            ]);
+        }
 
         // Recharger les widgets de cet onglet
         const widgetList = await this._fetchWidgetList();
@@ -95,6 +113,9 @@ Object.assign(Dashboard, {
         if (enabled.length > 0) {
             await Promise.all(enabled.map(w => this._mountWidget(w)));
         }
+
+        // Redémarrer l'auto-refresh pour les nouveaux widgets
+        this._restartAutoRefresh();
 
         this._renderTabBar();
     },

@@ -191,6 +191,28 @@
     to { transform: rotate(360deg); }
 }
 
+/* ---- Animations mount / unmount ---- */
+@keyframes widget-enter {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes widget-exit {
+    from { opacity: 1; transform: translateY(0);    }
+    to   { opacity: 0; transform: translateY(-8px); }
+}
+
+.widget-card--entering { animation: widget-enter 280ms ease both; }
+.widget-card--exiting  { animation: widget-exit  200ms ease both; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .widget-card--entering,
+    .widget-card--exiting {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+    }
+}
+
 /* ---- État erreur ---- */
 .widget-error {
     display: flex;

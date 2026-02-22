@@ -30,7 +30,8 @@ try {
                     'icon'     => $config['icon'],
                     'enabled'  => isset($layoutMap[$id]) ? (bool) $layoutMap[$id]['enabled'] : ($tabId === 1),
                     'position' => $layoutMap[$id]['position'] ?? 999,
-                    'size'     => $layoutMap[$id]['size']     ?? 'normal',
+                    'size'             => $layoutMap[$id]['size']     ?? 'normal',
+                    'refresh_interval' => $config['refresh_interval'] ?? DEFAULT_CACHE_TTL,
                 ];
             }
 

@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#7c6af7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <title>Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -180,12 +185,20 @@
     <script src="assets/js/modules/header.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/header.js') ?>"></script>
     <script src="assets/js/modules/tabs.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/tabs.js') ?>"></script>
     <script src="assets/js/modules/widgets.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/widgets.js') ?>"></script>
+    <script src="assets/js/modules/autorefresh.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/autorefresh.js') ?>"></script>
     <script src="assets/js/modules/dragdrop.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/dragdrop.js') ?>"></script>
     <script src="assets/js/modules/settings.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/settings.js') ?>"></script>
     <script src="assets/js/modules/alerts.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/alerts.js') ?>"></script>
     <script src="assets/js/modules/notifications.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/notifications.js') ?>"></script>
     <script src="assets/js/modules/keyboard.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/keyboard.js') ?>"></script>
     <script src="assets/js/modules/panels.js?v=<?= filemtime(__DIR__ . '/assets/js/modules/panels.js') ?>"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .catch(err => console.warn('SW registration failed:', err));
+    }
+    </script>
 
 </body>
 </html>

@@ -17,12 +17,13 @@
  *    6. modules/header.js
  *    7. modules/tabs.js
  *    8. modules/widgets.js
- *    9. modules/dragdrop.js
- *   10. modules/settings.js
- *   11. modules/alerts.js
- *   12. modules/notifications.js
- *   13. modules/keyboard.js
- *   14. modules/panels.js
+ *    9. modules/autorefresh.js
+ *   10. modules/dragdrop.js
+ *   11. modules/settings.js
+ *   12. modules/alerts.js
+ *   13. modules/notifications.js
+ *   14. modules/keyboard.js
+ *   15. modules/panels.js
  * ============================================================ */
 
 const Dashboard = {
@@ -85,6 +86,7 @@ const Dashboard = {
         this._initDragDrop();
         this._initKeyboard();
         this._initNotifications();
+        this._initAutoRefresh();
 
         // Fermer les dropdowns custom au clic en dehors
         document.addEventListener('click', () => {

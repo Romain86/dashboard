@@ -19,7 +19,17 @@ Object.assign(Dashboard, {
             card.classList.add(`widget-card--${widget.size}`);
         }
 
+        // Animation d'entrée avec stagger
+        const existingCards = grid.querySelectorAll('.widget-card').length;
+        card.style.animationDelay = `${existingCards * 60}ms`;
+        card.classList.add('widget-card--entering');
+
         grid.appendChild(card);
+
+        card.addEventListener('animationend', () => {
+            card.classList.remove('widget-card--entering');
+            card.style.animationDelay = '';
+        }, { once: true });
 
         const content = card.querySelector('.widget-content');
 
@@ -31,6 +41,9 @@ Object.assign(Dashboard, {
         }
 
         await this._renderWidgetContent(widget.id, content);
+
+        // Enregistrer pour l'auto-refresh
+        this._observeWidget(card);
     },
 
     /** Charge les données et rend le contenu d'un widget. */
@@ -163,6 +176,10 @@ Object.assign(Dashboard, {
             const contentEl = card.querySelector('.widget-content');
             await this._renderWidgetContent(widget.id, contentEl, true);
             btn.classList.remove('spinning');
+            // Reset auto-refresh timer après refresh manuel
+            this._autoRefreshLastTs[widget.id] = Date.now();
+            const interval = this._autoRefreshIntervals?.[widget.id];
+            if (interval) this._scheduleAutoRefresh(widget.id, interval * 1000);
         });
 
         // Settings

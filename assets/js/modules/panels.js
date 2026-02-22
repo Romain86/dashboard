@@ -61,7 +61,15 @@ Object.assign(Dashboard, {
         if (enabled) {
             await this._mountWidget(widget);
         } else {
-            document.getElementById(`widget-card-${widget.id}`)?.remove();
+            this._unobserveWidget(widget.id);
+            const card = document.getElementById(`widget-card-${widget.id}`);
+            if (card) {
+                card.classList.add('widget-card--exiting');
+                await new Promise(resolve => {
+                    card.addEventListener('animationend', () => { card.remove(); resolve(); }, { once: true });
+                    setTimeout(() => { card.remove(); resolve(); }, 300);
+                });
+            }
             this._clearError(widget.id);
         }
 
