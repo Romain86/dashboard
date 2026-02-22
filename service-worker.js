@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-shell-v1';
+const CACHE_NAME = 'dashboard-shell-v4';
 
 const SHELL_ASSETS = [
     '/',
@@ -11,6 +11,7 @@ const SHELL_ASSETS = [
     '/assets/css/fullscreen.css',
     '/assets/css/tabs.css',
     '/assets/css/utilities.css',
+    '/assets/css/responsive.css',
     '/assets/js/dashboard.js',
     '/assets/js/modules/utils.js',
     '/assets/js/modules/api.js',

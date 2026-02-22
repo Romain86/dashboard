@@ -7,6 +7,14 @@
  * ============================================================ */
 
 /* ---- Scrollbars ---- */
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.10) transparent;
+}
+
+/* Chromium / Safari */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
