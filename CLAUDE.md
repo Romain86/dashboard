@@ -3,7 +3,7 @@
 ## Contexte du projet
 
 Application web personnelle de type dashboard modulaire avec des widgets indépendants.
-Développée en PHP (backend API REST) + JavaScript (frontend).
+Développée en PHP (backend API REST) + JavaScript (frontend). Installable en PWA.
 
 ## Stack technique
 
@@ -12,6 +12,7 @@ Développée en PHP (backend API REST) + JavaScript (frontend).
 - **Cache** : Fichiers JSON locaux
 - **Frontend** : JavaScript vanilla
 - **Serveur local** : Herd (`https://dashboard.test/`)
+- **PWA** : manifest.json + service worker
 
 ---
 
@@ -21,8 +22,11 @@ Développée en PHP (backend API REST) + JavaScript (frontend).
 dashboard/
 ├── index.php                  # Frontend principal (HTML)
 ├── config.php                 # Constantes globales, autoload
+├── manifest.json              # Manifest PWA
+├── service-worker.js          # Service worker (cache shell)
+├── offline.html               # Page hors-ligne
 ├── api/
-│   └── widgets.php            # API REST (list, data, settings, layout, mutate, size)
+│   └── widgets.php            # API REST (13 actions)
 ├── widgets/
 │   └── {id}/
 │       ├── config.json        # Métadonnées du widget
@@ -34,12 +38,36 @@ dashboard/
 ├── core/
 │   ├── WidgetManager.php      # Scanne et appelle les widgets
 │   ├── Cache.php              # Cache JSON avec TTL + méthode remember()
-│   └── Database.php           # Singleton SQLite
+│   └── Database.php           # Singleton SQLite (3 tables)
 ├── assets/
-│   ├── css/                   # 8 fichiers CSS modulaires
+│   ├── icons/                 # Icônes PWA (192px, 512px)
+│   ├── css/                   # 9 fichiers CSS modulaires
+│   │   ├── tokens.css         # Variables CSS, reset, body
+│   │   ├── header.css         # Header, horloge, boutons
+│   │   ├── grid.css           # Grille, tailles, mode édition
+│   │   ├── card.css           # Cartes widget, animations, skeleton
+│   │   ├── modal.css          # Modale paramètres
+│   │   ├── drawers.css        # Widget Manager + Config Panel + backup
+│   │   ├── fullscreen.css     # Mode plein écran
+│   │   ├── tabs.css           # Barre d'onglets
+│   │   └── utilities.css      # Utilitaires, scrollbars, responsive
 │   └── js/
 │       ├── dashboard.js       # Core (état + init)
-│       └── modules/           # 10 modules JS
+│       └── modules/           # 14 modules JS
+│           ├── utils.js       # _escHtml(), _renderIcon()
+│           ├── api.js         # _fetchWidgetList(), _fetchWidgetData()
+│           ├── clock.js       # _startClock()
+│           ├── geolocation.js # _getLocation()
+│           ├── header.js      # _initHeaderButtons()
+│           ├── tabs.js        # Onglets multi-pages
+│           ├── widgets.js     # _mountWidget(), _createCard()
+│           ├── autorefresh.js # IntersectionObserver + timers
+│           ├── dragdrop.js    # _initDragDrop(), _saveLayout()
+│           ├── settings.js    # _openSettings(), modale paramètres
+│           ├── alerts.js      # Suivi erreurs + badge
+│           ├── notifications.js # Toasts + dropdown + desktop notifs
+│           ├── keyboard.js    # Raccourcis clavier (E/F/R/?/Esc)
+│           └── panels.js      # Widget Manager + Config Panel
 └── data/                      # Créé automatiquement (gitignored)
     ├── dashboard.db           # Base SQLite
     └── cache/                 # Fichiers cache JSON
@@ -56,8 +84,10 @@ dashboard/
 
 ### core/Database.php
 - Singleton PDO SQLite
-- Tables : `widget_settings` (clé/valeur par widget) et `widget_layout` (position + enabled + size)
-- Méthodes : `getSetting`, `getSettings`, `setSetting`, `getLayout`, `saveLayout`
+- **3 tables** : `widget_settings`, `widget_layout` (avec `tab_id`), `dashboard_tabs`
+- Settings : `getSetting`, `getSettings`, `setSetting`, `getAllSettings`
+- Layout : `getLayout(tabId)`, `saveLayout(widgetId, position, enabled, tabId)`, `saveSize(widgetId, size, tabId)`
+- Tabs : `getTabs`, `createTab`, `renameTab`, `deleteTab`
 
 ### core/Cache.php
 - Cache fichier JSON avec TTL
@@ -68,13 +98,22 @@ dashboard/
 - `callWidget()` passe automatiquement par le cache (TTL depuis `refresh_interval` du config.json)
 
 ### api/widgets.php
-- `?action=list` — Liste tous les widgets avec leur état (activé/position)
-- `?action=data&widget=steam` — Retourne les données d'un widget (avec cache)
-- `?action=data&widget=steam&force=1` — Force le vidage du cache avant rechargement
-- `POST ?action=settings&widget=steam` — Sauvegarde les paramètres
-- `POST ?action=layout` — Sauvegarde la disposition
-- `POST ?action=mutate&widget=s17` — Action CRUD custom
-- `POST ?action=size&widget=steam` — Sauvegarde la taille
+
+| Action | Méthode | Description |
+|--------|---------|-------------|
+| `list` | GET | Liste widgets avec état pour un onglet (`&tab=N`) |
+| `data` | GET | Données d'un widget (avec cache, `&force=1` pour bypass) |
+| `settings-get` | GET | Paramètres sauvegardés d'un widget |
+| `settings` | POST | Sauvegarde paramètres |
+| `layout` | POST | Sauvegarde disposition (tab-aware) |
+| `mutate` | POST | Action CRUD custom (appelle mutate.php) |
+| `size` | POST | Sauvegarde taille (tab-aware) |
+| `export` | GET | Export JSON complet (v2 : tabs + layouts + settings) |
+| `import` | POST | Import depuis un backup JSON |
+| `tabs` | GET | Liste des onglets |
+| `tab-create` | POST | Créer un onglet |
+| `tab-rename` | POST | Renommer un onglet |
+| `tab-delete` | POST | Supprimer un onglet (id≠1) |
 
 ---
 
@@ -100,17 +139,10 @@ Chaque widget est un dossier dans `/widgets/` avec 3 fichiers :
 
 ### api.php
 Doit retourner un tableau de données. Reçoit `$settings` (array avec les paramètres configurés).
-```php
-<?php
-// $settings est injecté par WidgetManager::callWidget()
-// Retourner un tableau de données
-return [
-    'now_playing' => '...',
-];
-```
+Peut retourner `_notifications` pour le système de notifications.
 
 ### widget.js
-Reçoit les données de l'API et génère le HTML du widget.
+Enregistre un renderer : `window.DashboardWidgets['{id}'] = { render(data, container) {} }`
 
 ---
 
@@ -118,7 +150,7 @@ Reçoit les données de l'API et génère le HTML du widget.
 
 | Widget | API | Auth | Refresh |
 |--------|-----|------|---------|
-| Météo | OpenWeatherMap | API Key | 10 min |
+| Météo | OpenWeatherMap + Air Pollution | API Key | 10 min |
 | Spotify | Spotify Web API | OAuth2 | 30 sec |
 | Steam | Steam Web API | API Key | 5 min |
 | Twitch | Twitch Helix API | OAuth2 | 1 min |
@@ -134,9 +166,50 @@ Reçoit les données de l'API et génère le HTML du widget.
 
 ### Notes spécifiques
 
-- **YouTube** : OAuth2 via Google OAuth Playground (`redirect_uri = https://developers.google.com/oauthplayground`). Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes pour éviter le timeout.
-- **Colis** : Pas d'API externe (17TRACK/La Poste nécessitent un compte pro). Détection automatique du transporteur par regex sur le numéro. Liens directs vers les pages de suivi.
-- **Google Calendar** : Même méthode OAuth Playground que YouTube.
+- **Météo** : Inclut la qualité de l'air (AQI) via l'API Air Pollution (gratuite, même clé).
+- **YouTube** : OAuth2 via Google OAuth Playground. Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes.
+- **Colis** : Pas d'API externe. Détection automatique du transporteur par regex. Liens directs de suivi.
+- **Twitch** : Émet des notifications (`_notifications`) quand un stream passe en live.
+
+---
+
+## Fonctionnalités transverses
+
+### Onglets (tabs)
+- Table `dashboard_tabs` + colonne `tab_id` dans `widget_layout`
+- Chaque onglet a son propre layout de widgets
+- Tab 1 ("Accueil") est protégée (non supprimable)
+- Bouton `×` visible en mode édition sur les autres onglets
+
+### Auto-refresh intelligent
+- `IntersectionObserver` sur chaque carte widget (seuil 10%)
+- Timers individuels basés sur `refresh_interval` du config.json
+- Pause quand le widget sort du viewport ou la fenêtre perd le focus
+- Refresh immédiat si stale au retour dans le viewport
+
+### Animations
+- `widget-enter` (280ms) : fade-in + translateY(12px) au mount avec stagger 60ms
+- `widget-exit` (200ms) : fade-out + translateY(-8px) au démontage
+- `prefers-reduced-motion` respecté
+
+### Notifications
+- Stockage localStorage (max 50), pas de table DB
+- Clé `_notifications` dans les données API widget
+- Toasts auto-dismiss 5s, dropdown avec historique, desktop notifications
+- Permission Notification demandée au premier clic
+
+### Raccourcis clavier
+- `E` mode édition, `F` plein écran, `R` refresh all, `?` aide, `Esc` tout fermer
+- Ignorés quand focus dans input/textarea/select
+
+### Import/Export
+- Export v2 : tabs + layouts + settings en JSON
+- Import : restaure tout + vide le cache
+
+### PWA
+- `manifest.json` : standalone, thème violet (#7c6af7), fond sombre (#0f0f13)
+- `service-worker.js` : stale-while-revalidate pour assets, network-only pour API
+- `offline.html` : page hors-ligne
 
 ---
 
@@ -146,3 +219,4 @@ Reçoit les données de l'API et génère le HTML du widget.
 - Ne jamais committer `data/dashboard.db` ni `data/cache/`
 - Les clés API et tokens sont stockés en base SQLite (table `widget_settings`), jamais en dur dans le code
 - Le cache est basé sur fichiers JSON dans `data/cache/`, TTL défini par `refresh_interval` dans config.json
+- Cache key inclut les coords GPS arrondies à 0.01° quand elles sont présentes

@@ -1,26 +1,36 @@
 # Guide Développeur — Dashboard
 
-Documentation technique pour le développement et l'ajout de nouveaux widgets.
+Documentation technique complète du projet. Ce guide permet à un développeur qui découvre le projet de comprendre l'architecture, le flux de données, et de contribuer (ajout de widgets, modifications du core).
 
 ---
 
 ## Table des matières
 
 1. [Stack technique](#stack-technique)
-2. [Architecture du projet](#architecture-du-projet)
-3. [Flux de données](#flux-de-données)
-4. [Créer un nouveau widget](#créer-un-nouveau-widget)
-5. [Structure d'un widget](#structure-dun-widget)
-6. [API backend (api.php)](#api-backend-apiphp)
-7. [Rendu frontend (widget.js)](#rendu-frontend-widgetjs)
-8. [Actions CRUD (mutate.php)](#actions-crud-mutatephp)
-9. [Authentification OAuth2 (oauth.php)](#authentification-oauth2-oauthphp)
-10. [Cache](#cache)
-11. [Géolocalisation](#géolocalisation)
-12. [Base de données](#base-de-données)
-13. [CSS & JS modulaire](#css--js-modulaire)
-14. [Conventions](#conventions)
-15. [Exemples concrets](#exemples-concrets)
+2. [Installation et prérequis](#installation-et-prérequis)
+3. [Architecture du projet](#architecture-du-projet)
+4. [Flux de données](#flux-de-données)
+5. [Base de données](#base-de-données)
+6. [API REST](#api-rest)
+7. [Frontend : objet Dashboard et modules](#frontend--objet-dashboard-et-modules)
+8. [CSS modulaire et thème](#css-modulaire-et-thème)
+9. [Créer un nouveau widget](#créer-un-nouveau-widget)
+10. [Structure d'un widget](#structure-dun-widget)
+11. [API backend (api.php)](#api-backend-apiphp)
+12. [Rendu frontend (widget.js)](#rendu-frontend-widgetjs)
+13. [Actions CRUD (mutate.php)](#actions-crud-mutatephp)
+14. [Authentification OAuth2](#authentification-oauth2)
+15. [Cache](#cache)
+16. [Géolocalisation](#géolocalisation)
+17. [Système d'onglets](#système-donglets)
+18. [Auto-refresh intelligent](#auto-refresh-intelligent)
+19. [Animations](#animations)
+20. [Notifications](#notifications)
+21. [Raccourcis clavier](#raccourcis-clavier)
+22. [Import / Export](#import--export)
+23. [PWA (Progressive Web App)](#pwa-progressive-web-app)
+24. [Conventions](#conventions)
+25. [Exemples concrets](#exemples-concrets)
 
 ---
 
@@ -32,8 +42,39 @@ Documentation technique pour le développement et l'ajout de nouveaux widgets.
 | Base de données | SQLite via PDO |
 | Cache | Fichiers JSON avec TTL |
 | Frontend | JavaScript vanilla |
-| CSS | Vanilla CSS, modulaire |
+| CSS | Vanilla CSS, modulaire (9 fichiers) |
 | Serveur local | Herd (`https://dashboard.test/`) |
+| PWA | manifest.json + service worker |
+
+Pas de bundler, pas de framework JS, pas de npm. Tout est servi directement par PHP.
+
+---
+
+## Installation et prérequis
+
+### Prérequis
+
+- PHP 8.0+ avec les extensions : PDO SQLite, cURL, GD (pour les icônes)
+- Serveur web local (Herd, WAMP, MAMP, etc.)
+- HTTPS requis pour le service worker et les notifications desktop
+
+### Installation
+
+```bash
+git clone https://github.com/Romain86/dashboard.git
+cd dashboard
+# Configurer le serveur web pour pointer vers ce dossier
+# Ex: https://dashboard.test/
+```
+
+Le dossier `data/` et la base SQLite sont créés automatiquement au premier chargement.
+
+### Premier lancement
+
+1. Ouvrir `https://dashboard.test/` dans le navigateur
+2. Cliquer sur le bouton **Configuration** (icône sliders) dans le header
+3. Pour chaque widget, cliquer **Configurer** et renseigner les clés API
+4. Les clés sont stockées en SQLite, jamais dans le code
 
 ---
 
@@ -41,16 +82,19 @@ Documentation technique pour le développement et l'ajout de nouveaux widgets.
 
 ```
 dashboard/
+├── index.php                  # Point d'entrée HTML unique
 ├── config.php                 # Constantes globales + autoloader PSR-like
-├── index.php                  # Point d'entrée HTML
+├── manifest.json              # Manifest PWA (standalone, thème violet)
+├── service-worker.js          # Cache shell assets (stale-while-revalidate)
+├── offline.html               # Page affichée hors-ligne
 │
 ├── api/
-│   └── widgets.php            # Routeur API REST (list, data, settings, layout, mutate, size)
+│   └── widgets.php            # Routeur API REST (13 actions)
 │
 ├── core/                      # Classes auto-chargées par config.php
-│   ├── WidgetManager.php      # Scanne widgets/*/config.json, appelle api.php
+│   ├── WidgetManager.php      # Scanne widgets/*/config.json, appelle api.php via cache
 │   ├── Cache.php              # Cache fichier JSON (get, set, remember, delete)
-│   └── Database.php           # Singleton PDO SQLite (widget_settings, widget_layout)
+│   └── Database.php           # Singleton PDO SQLite (3 tables)
 │
 ├── widgets/                   # Un dossier par widget
 │   └── {id}/
@@ -58,36 +102,67 @@ dashboard/
 │       ├── api.php            # Logique de données (requis)
 │       ├── widget.js          # Rendu HTML (requis)
 │       ├── mutate.php         # Actions d'écriture (optionnel)
-│       └── oauth.php          # Flux OAuth2 (optionnel)
+│       ├── auth.php           # Redirection OAuth2 (optionnel)
+│       └── callback.php       # Callback OAuth2 (optionnel)
 │
 ├── assets/
-│   ├── css/                   # 8 fichiers CSS modulaires
-│   │   ├── tokens.css         # Variables CSS, reset, body
-│   │   ├── header.css         # Header, horloge, boutons, alertes
-│   │   ├── grid.css           # Grille, tailles, mode édition
-│   │   ├── card.css           # Cartes widget, skeleton, erreurs
-│   │   ├── modal.css          # Modale paramètres, formulaire
-│   │   ├── drawers.css        # Widget Manager + Config Panel
-│   │   ├── fullscreen.css     # Mode plein écran
-│   │   └── utilities.css      # Utilitaires, scrollbars, responsive
+│   ├── icons/                 # Icônes PWA (icon-192.png, icon-512.png)
+│   ├── css/                   # 9 fichiers CSS modulaires
+│   │   ├── tokens.css         # Variables :root, reset, body
+│   │   ├── header.css         # Header, horloge, boutons, alertes, notifications
+│   │   ├── grid.css           # Grille auto-fill, tailles N/L/XL, mode édition
+│   │   ├── card.css           # Cartes widget, animations enter/exit, skeleton
+│   │   ├── modal.css          # Modale paramètres, formulaire, champs custom
+│   │   ├── drawers.css        # Widget Manager, Config Panel, section backup
+│   │   ├── fullscreen.css     # Mode plein écran, auto-hide header
+│   │   ├── tabs.css           # Barre d'onglets, bouton +, bouton ×
+│   │   └── utilities.css      # Classes utilitaires, scrollbars, responsive
 │   └── js/
-│       ├── dashboard.js       # Core : objet Dashboard, état, init()
-│       └── modules/           # 10 modules (Object.assign sur Dashboard)
+│       ├── dashboard.js       # Core : objet Dashboard, état interne, init()
+│       └── modules/           # 14 modules (Object.assign sur Dashboard)
 │           ├── utils.js       # _escHtml(), _renderIcon()
 │           ├── api.js         # _fetchWidgetList(), _fetchWidgetData(), _saveSettings()
-│           ├── clock.js       # _startClock()
+│           ├── clock.js       # _startClock() — horloge temps réel dans le header
 │           ├── geolocation.js # _getLocation(), _updateGeoBtn()
-│           ├── header.js      # _initHeaderButtons()
+│           ├── header.js      # _initHeaderButtons() — edit, fullscreen, refresh, geo
+│           ├── tabs.js        # _loadTabs(), _switchTab(), _createTab(), _renderTabBar()
 │           ├── widgets.js     # _mountWidget(), _createCard(), _renderWidgetContent()
-│           ├── dragdrop.js    # _initDragDrop(), _saveLayout()
+│           ├── autorefresh.js # IntersectionObserver + setTimeout par widget
+│           ├── dragdrop.js    # _initDragDrop(), _saveLayout() — réordonnement
 │           ├── settings.js    # _openSettings(), _buildSettingsForm(), _submitSettings()
 │           ├── alerts.js      # _trackError(), _clearError(), _updateAlertBadge()
-│           └── panels.js      # Widget Manager + Config Panel
+│           ├── notifications.js # Toasts, dropdown, desktop notifications
+│           ├── keyboard.js    # Raccourcis E/F/R/?/Esc + overlay d'aide
+│           └── panels.js      # Widget Manager + Config Panel + Import/Export
 │
-└── data/                      # Créé automatiquement (gitignored)
+└── data/                      # Auto-créé, gitignored
     ├── dashboard.db           # Base SQLite
     └── cache/                 # Fichiers JSON de cache
 ```
+
+### Ordre de chargement des scripts (index.php)
+
+```
+1.  dashboard.js       ← définit l'objet Dashboard + init()
+2.  modules/utils.js
+3.  modules/api.js
+4.  modules/clock.js
+5.  modules/geolocation.js
+6.  modules/header.js
+7.  modules/tabs.js
+8.  modules/widgets.js
+9.  modules/autorefresh.js
+10. modules/dragdrop.js
+11. modules/settings.js
+12. modules/alerts.js
+13. modules/notifications.js
+14. modules/keyboard.js
+15. modules/panels.js
+    ↓
+    DOMContentLoaded → Dashboard.init()
+```
+
+Tous les scripts utilisent `filemtime()` pour le cache-busting : `?v=<?= filemtime(...) ?>`.
 
 ---
 
@@ -114,7 +189,8 @@ dashboard/
        │ 3. _renderWidgetContent()                                                   │
        │    → charge widget.js (une seule fois)                                      │
        │    → appelle render(data, container)                                        │
-       │                                                                             │
+       │    → _processWidgetNotifications()                                          │
+       │    → _observeWidget() pour auto-refresh                                     │
 ```
 
 ### Cycle de vie complet d'une requête `data`
@@ -164,7 +240,6 @@ return $cache->remember($cacheKey, $ttl, function () use ($apiFile, $settings) {
 Le fichier `api.php` du widget appelle l'API externe et retourne un tableau :
 
 ```php
-// $settings est disponible dans le scope
 $url = "https://api.steampowered.com/...?key={$settings['api_key']}";
 $data = json_decode(@file_get_contents($url, false, $ctx), true);
 return ['name' => $data['personaname'], ...];
@@ -172,27 +247,27 @@ return ['name' => $data['personaname'], ...];
 
 **5. Réponse JSON → Frontend**
 
-`api/widgets.php` enveloppe le résultat :
-
 ```json
 {
     "success": true,
-    "data": { "name": "Player1", "status": "En ligne", ... },
+    "data": { "name": "Player1", "status": "En ligne" },
     "cache_ts": 1708520400
 }
 ```
 
-**6. Frontend → Rendu**
-
-Le module `widgets.js` charge dynamiquement `widget.js` puis appelle `render()` :
+**6. Frontend → Rendu → Auto-refresh**
 
 ```js
-// Chargement du script (une seule fois par widget)
-await this._loadScript(`widgets/${widget.id}/widget.js?v=${this._pageVersion}`);
-
-// Appel du renderer
+// widgets.js charge le script puis appelle render()
+await this._loadScript(`widgets/${widget.id}/widget.js`);
 const renderer = window.DashboardWidgets[widget.id];
 renderer.render(json.data, contentEl);
+
+// Traite les éventuelles notifications
+this._processWidgetNotifications(widgetId, data);
+
+// Enregistre pour l'auto-refresh (IntersectionObserver)
+this._observeWidget(card);
 ```
 
 ### Cycle de vie d'une mutation
@@ -213,10 +288,235 @@ Frontend                    api/widgets.php              widgets/s17/mutate.php
    │                              │  $cache->deleteByPrefix()    │
    │  { success, data }           │                              │
    │ ←────────────────────────────│                              │
-   │                              │                              │
    │  widget.js: re-render        │                              │
-   │  avec les données retournées │                              │
 ```
+
+---
+
+## Base de données
+
+SQLite, fichier `data/dashboard.db`, créé automatiquement par `Database::__construct()`.
+
+### Tables
+
+**`widget_settings`** — Paramètres par widget (clé/valeur)
+
+```sql
+CREATE TABLE widget_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    widget_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(widget_id, key)
+);
+```
+
+Stocke les clés API, tokens OAuth, préférences de chaque widget.
+
+**`widget_layout`** — Position et état d'affichage par onglet
+
+```sql
+CREATE TABLE widget_layout (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    widget_id TEXT NOT NULL,
+    tab_id INTEGER DEFAULT 1,
+    position INTEGER DEFAULT 0,
+    enabled INTEGER DEFAULT 1,
+    size TEXT DEFAULT 'normal',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(widget_id, tab_id)
+);
+```
+
+Chaque widget peut avoir un layout différent par onglet. `size` vaut `normal`, `lg` (2 colonnes) ou `xl` (pleine largeur).
+
+**`dashboard_tabs`** — Onglets (pages)
+
+```sql
+CREATE TABLE dashboard_tabs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    position INTEGER DEFAULT 0
+);
+-- L'onglet id=1 "Accueil" est créé au premier lancement et ne peut pas être supprimé.
+```
+
+### Méthodes de Database.php
+
+```php
+// Singleton
+$db = Database::getInstance();
+$pdo = $db->getPdo();
+
+// Settings
+$db->getSetting('steam', 'api_key');          // → string|null
+$db->getSettings('steam');                     // → ['api_key' => '...', 'steam_id' => '...']
+$db->setSetting('steam', 'api_key', 'XXXX');  // INSERT OR REPLACE
+$db->getAllSettings();                          // → ['steam' => [...], 'meteo' => [...]]
+
+// Layout (tab-aware)
+$db->getLayout(1);                             // → [{widget_id, position, enabled, size}, ...]
+$db->saveLayout('steam', 0, true, 1);         // (widgetId, position, enabled, tabId)
+$db->saveSize('steam', 'lg', 1);              // (widgetId, size, tabId)
+
+// Tabs
+$db->getTabs();                                // → [{id, name, position}, ...]
+$db->createTab('Gaming', 1);                   // → int (new id)
+$db->renameTab(2, 'Nouveau nom');
+$db->deleteTab(2);                             // Supprime aussi les layouts associés
+```
+
+---
+
+## API REST
+
+Point d'entrée unique : `api/widgets.php`. Le routage se fait via `$_GET['action']`.
+
+### Paramètres globaux
+
+| Paramètre | Source | Description |
+|-----------|--------|-------------|
+| `action` | GET | Action à exécuter (obligatoire) |
+| `widget` | GET | ID du widget (pour les actions widget-spécifiques) |
+| `tab` | GET | ID de l'onglet (défaut: 1) |
+| `lat`, `lon` | GET | Coordonnées GPS du navigateur |
+| `force` | GET | Si `1`, vide le cache avant l'appel |
+
+### Actions
+
+| Action | Méthode | Params requis | Description |
+|--------|---------|---------------|-------------|
+| `list` | GET | — | Liste tous les widgets avec état pour l'onglet courant. Retourne aussi `refresh_interval`. |
+| `data` | GET | `widget` | Données d'un widget (via cache). Accepte `lat`/`lon` et `force=1`. |
+| `settings-get` | GET | `widget` | Paramètres sauvegardés d'un widget. |
+| `settings` | POST | `widget` | Sauvegarde les paramètres (body JSON). Vide le cache. |
+| `layout` | POST | — | Sauvegarde la disposition (body JSON: `[{id, position, enabled}]`). Tab-aware via `&tab=N`. |
+| `size` | POST | `widget` | Sauvegarde la taille (body JSON: `{size}`). Tab-aware via `&tab=N`. |
+| `mutate` | POST | `widget` | Action CRUD (body JSON transmis à `mutate.php`). Vide le cache. |
+| `export` | GET | — | Export complet JSON v2 (tabs + layouts + settings). Header `Content-Disposition: attachment`. |
+| `import` | POST | — | Import depuis un backup JSON. Vide tout le cache. |
+| `tabs` | GET | — | Liste des onglets. |
+| `tab-create` | POST | — | Crée un onglet (body: `{name, position}`). Retourne `{id}`. |
+| `tab-rename` | POST | — | Renomme (body: `{id, name}`). |
+| `tab-delete` | POST | — | Supprime (body: `{id}`). Interdit pour `id=1`. |
+
+### Format de réponse
+
+```json
+// Succès
+{ "success": true, "data": { ... }, "cache_ts": 1708520400 }
+{ "success": true, "widgets": [...] }
+
+// Erreur (HTTP 400)
+{ "success": false, "error": "Message d'erreur" }
+```
+
+---
+
+## Frontend : objet Dashboard et modules
+
+### Architecture
+
+Un seul objet global `Dashboard` défini dans `dashboard.js`. Les 14 modules ajoutent leurs méthodes via `Object.assign()` :
+
+```js
+// dashboard.js
+const Dashboard = {
+    _widgetList: [],
+    _editMode: false,
+    _currentTab: 1,
+    _tabs: [],
+    // ...
+
+    async init() {
+        // 1. Horloge + boutons header
+        // 2. Restaurer mode édition
+        // 3. Charger les onglets
+        // 4. Géolocalisation + liste widgets en parallèle
+        // 5. Monter les widgets activés
+        // 6. Init drag-drop, raccourcis, notifications, auto-refresh
+    },
+};
+
+document.addEventListener('DOMContentLoaded', () => Dashboard.init());
+```
+
+```js
+// modules/monmodule.js — ajoute des méthodes
+Object.assign(Dashboard, {
+    maMethode() { /* this = Dashboard */ },
+});
+```
+
+### État interne (propriétés de Dashboard)
+
+| Propriété | Type | Description |
+|-----------|------|-------------|
+| `_widgetList` | array | Liste complète des widgets (issue de l'API) |
+| `_settingsWidget` | object|null | Widget en cours d'édition (modale ouverte) |
+| `_location` | object|null | `{lat, lon}` ou null |
+| `_widgetErrors` | object | Erreurs widgets actives `{widgetId → {name, icon, msg}}` |
+| `_editMode` | boolean | Mode édition actif (drag-drop, resize, onglets) |
+| `_fsHideTimer` | number|null | Timer auto-hide header en plein écran |
+| `_pageVersion` | number | Timestamp pour cache-busting des widget.js |
+| `_lastVisit` | number | Timestamp dernière visite (badges « nouveau ») |
+| `_tabs` | array | Onglets `[{id, name, position}]` |
+| `_currentTab` | number | ID de l'onglet actif |
+| `_autoRefreshTimers` | object | setTimeout IDs par widget |
+| `_autoRefreshLastTs` | object | Timestamp du dernier refresh par widget |
+| `_autoRefreshObserver` | IntersectionObserver | Observateur de visibilité |
+| `_autoRefreshIntervals` | object | refresh_interval par widget (secondes) |
+
+---
+
+## CSS modulaire et thème
+
+### 9 fichiers CSS, chargés en ordre dans `index.php`
+
+| # | Fichier | Rôle |
+|---|---------|------|
+| 1 | `tokens.css` | Variables `:root`, reset, body, fonts |
+| 2 | `header.css` | Header, horloge, boutons, alertes, notifications dropdown |
+| 3 | `grid.css` | Grille `auto-fill minmax(300px, 1fr)`, tailles, mode édition |
+| 4 | `card.css` | Carte widget, header carte, badges, drag, skeleton, animations enter/exit |
+| 5 | `modal.css` | Modale paramètres, formulaire, champs custom select/multiselect |
+| 6 | `drawers.css` | Widget Manager, Config Panel, section backup import/export |
+| 7 | `fullscreen.css` | Mode plein écran, auto-hide header |
+| 8 | `tabs.css` | Barre d'onglets, boutons tab, bouton +, bouton ×, menu contextuel |
+| 9 | `utilities.css` | Classes utilitaires, scrollbars, responsive breakpoints |
+
+### Variables CSS du thème (tokens.css)
+
+```css
+var(--bg-base)       /* #0f0f13 — fond principal */
+var(--bg-surface)    /* #16161d — fond cartes/modales */
+var(--bg-card)       /* rgba(255,255,255,0.04) — fond léger */
+var(--bg-hover)      /* rgba(255,255,255,0.07) — survol */
+var(--border)        /* rgba(255,255,255,0.08) — bordures */
+var(--accent)        /* #7c6af7 — violet principal */
+var(--accent-dim)    /* rgba(124,106,247,0.15) — violet transparent */
+var(--text)          /* #e2e2e8 — texte principal */
+var(--text-dim)      /* #9898a6 — texte secondaire */
+var(--muted)         /* #555560 — texte désactivé */
+var(--danger)        /* #f56565 — rouge erreur */
+var(--success)       /* #68d391 — vert succès */
+var(--radius)        /* 12px — border-radius standard */
+var(--radius-sm)     /* 8px — border-radius petit */
+var(--transition)    /* 180ms ease — transition par défaut */
+```
+
+### Convention de nommage CSS dans les widgets
+
+Chaque widget utilise un **préfixe unique** de 2-3 lettres pour éviter les collisions :
+
+| Widget | Préfixe | Exemples |
+|--------|---------|----------|
+| Steam | `st-` | `.st-avatar`, `.st-game` |
+| Spotify | `sp-` | `.sp-track`, `.sp-fill` |
+| Météo | `meteo-` | `.meteo-grid`, `.meteo-aqi-badge` |
+| GitHub | `gh-` | `.gh-repo`, `.gh-calendar` |
+| YouTube | `yt-` | `.yt-channel`, `.yt-video` |
 
 ---
 
@@ -268,7 +568,7 @@ mkdir widgets/mon-widget
 | `description` | string | Description courte |
 | `version` | string | Version du widget |
 | `params` | array | Paramètres configurables (peut être vide `[]`) |
-| `refresh_interval` | int | TTL du cache en secondes |
+| `refresh_interval` | int | TTL du cache en secondes. Sert aussi pour l'auto-refresh frontend. |
 
 **Types de paramètres supportés :**
 
@@ -280,13 +580,11 @@ mkdir widgets/mon-widget
 | `select` | Dropdown custom | Nécessite `options: [{value, label}]` |
 | `multiselect` | Checkboxes | Nécessite `options`, valeur = CSV |
 
-**Icône SVG (recommandé) :**
+**Icône SVG (recommandé pour un rendu précis) :**
 
 ```json
 "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\"><path fill=\"#ff6600\" d=\"M12 2L2 22h20z\"/></svg>"
 ```
-
-> L'icône SVG doit avoir `width="20" height="20"` pour un rendu correct.
 
 ### Étape 3 — Créer `api.php`
 
@@ -294,7 +592,6 @@ mkdir widgets/mon-widget
 <?php
 
 // $settings est injecté automatiquement par WidgetManager::callWidget()
-// Il contient tous les paramètres configurés par l'utilisateur
 $apiKey   = $settings['api_key']  ?? null;
 $username = $settings['username'] ?? null;
 
@@ -311,7 +608,7 @@ if (!$data) {
     throw new Exception('Impossible de récupérer les données');
 }
 
-// Retourner un tableau associatif (sera converti en JSON par le framework)
+// Retourner un tableau associatif
 return [
     'name'   => $data['display_name'],
     'score'  => $data['score'],
@@ -319,15 +616,12 @@ return [
 ];
 ```
 
-**Règles importantes :**
+**Règles :**
 
-- Le fichier doit **retourner** un tableau (`return [...]`), pas faire d'`echo`
-- `$settings` est le seul paramètre injecté (contient les valeurs de `widget_settings`)
-- Les erreurs doivent être des `throw new Exception('message')`
-- Le message d'erreur est affiché à l'utilisateur — soyez clair
-- Si le message contient "non configuré" ou "manquants", le dashboard affiche le bouton "Configurer"
-- Si le message contient "autorisation" ou "session", le dashboard affiche "Connecter mon compte"
-- Ne jamais faire de `echo`, `print_r`, `var_dump` — ça corrompt la réponse JSON
+- **Retourner** un tableau (`return [...]`), ne jamais faire `echo`
+- `$settings` est le seul paramètre injecté
+- Erreurs via `throw new Exception('message lisible')`
+- Le message d'erreur est affiché à l'utilisateur — voir la section [Messages d'erreur et UI](#messages-derreur-et-ui)
 
 ### Étape 4 — Créer `widget.js`
 
@@ -339,14 +633,12 @@ window.DashboardWidgets['mon-widget'] = {
     render(data, container) {
         this._injectStyles();
 
-        const { name, score, avatar } = data;
-
         container.innerHTML = `
             <div class="mw-wrap">
-                <img class="mw-avatar" src="${this._esc(avatar)}" alt="">
+                <img class="mw-avatar" src="${this._esc(data.avatar)}" alt="">
                 <div class="mw-info">
-                    <div class="mw-name">${this._esc(name)}</div>
-                    <div class="mw-score">Score : ${score}</div>
+                    <div class="mw-name">${this._esc(data.name)}</div>
+                    <div class="mw-score">Score : ${data.score}</div>
                 </div>
             </div>`;
     },
@@ -364,39 +656,24 @@ window.DashboardWidgets['mon-widget'] = {
         const s = document.createElement('style');
         s.id = 'mw-styles';
         s.textContent = `
-            .mw-wrap {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            .mw-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-            }
-            .mw-name {
-                font-size: 14px;
-                font-weight: 600;
-                color: #e2e2e8;
-            }
-            .mw-score {
-                font-size: 12px;
-                color: #9898a6;
-            }
+            .mw-wrap { display: flex; align-items: center; gap: 12px; }
+            .mw-avatar { width: 40px; height: 40px; border-radius: 50%; }
+            .mw-name { font-size: 14px; font-weight: 600; color: var(--text); }
+            .mw-score { font-size: 12px; color: var(--text-dim); }
         `;
         document.head.appendChild(s);
     },
 };
 ```
 
-**Règles importantes :**
+**Règles :**
 
 - Le renderer est enregistré sur `window.DashboardWidgets['{id}']`
-- La méthode `render(data, container)` reçoit les données de `api.php` et l'élément DOM
-- **Toujours échapper** les données avec `_esc()` avant de les injecter dans le HTML
-- Utiliser un **préfixe CSS unique** pour le widget (ex: `mw-` pour "mon-widget")
-- Les styles sont injectés via `_injectStyles()` avec un `id` pour éviter les doublons
-- Le thème est dark : fond sombre, texte clair (`#e2e2e8`), texte secondaire (`#9898a6`)
+- `render(data, container)` reçoit les données et l'élément DOM `.widget-content`
+- **Toujours échapper** les données avec `_esc()` avant injection HTML
+- Utiliser un **préfixe CSS unique** (ex: `mw-` pour "mon-widget")
+- Styles injectés via `_injectStyles()` avec un `id` pour éviter les doublons
+- Utiliser les variables CSS du thème (`var(--text)`, `var(--text-dim)`, etc.)
 
 ### Étape 5 — Tester
 
@@ -404,18 +681,30 @@ window.DashboardWidgets['mon-widget'] = {
 https://dashboard.test/api/widgets.php?action=data&widget=mon-widget
 ```
 
-Si le widget n'est pas configuré, l'API retournera l'erreur et le dashboard affichera le bouton "Configurer".
+Si le widget n'est pas configuré, le dashboard affiche le bouton "Configurer".
 
 ### Étape 6 (optionnel) — Couleur d'accent
 
-Pour ajouter une couleur de glow au survol de la carte, éditer `assets/js/modules/widgets.js` et ajouter une entrée dans `_widgetAccents` :
+Pour ajouter un glow au survol de la carte, éditer `assets/js/modules/widgets.js` et ajouter une entrée dans `_widgetAccents` :
 
 ```js
-const _widgetAccents = {
-    // ...
-    'mon-widget': ['rgba(255, 102, 0, 0.30)', 'rgba(255, 102, 0, 0.06)'],
-};
+'mon-widget': ['rgba(255, 102, 0, 0.30)', 'rgba(255, 102, 0, 0.06)'],
 ```
+
+### Étape 7 (optionnel) — Notifications
+
+Pour émettre des notifications depuis le widget, retourner une clé `_notifications` dans `api.php` :
+
+```php
+return [
+    'items' => [...],
+    '_notifications' => [
+        ['id' => 'event_123', 'title' => 'Nouvel événement !', 'message' => 'Détails ici'],
+    ],
+];
+```
+
+Chaque notification doit avoir un `id` unique (dédupliqué par le frontend via `{widgetId}_{notif.id}`).
 
 ---
 
@@ -433,8 +722,10 @@ const _widgetAccents = {
 
 | Fichier | Rôle |
 |---------|------|
-| `mutate.php` | Actions d'écriture (POST) : +1 épisode, toggle, etc. |
-| `oauth.php` | Page de callback OAuth2 (Spotify, Twitch, Google, etc.) |
+| `mutate.php` | Actions d'écriture (POST) : +1 épisode, toggle, ajout/suppression |
+| `oauth.php` | Page de redirection/callback OAuth2 |
+| `auth.php` | Variante : page de lancement OAuth2 (redirige vers le provider) |
+| `callback.php` | Variante : callback OAuth2 (reçoit le code d'autorisation) |
 
 ---
 
@@ -448,7 +739,7 @@ $settings['_lat']       // Latitude GPS (si géolocalisation active)
 $settings['_lon']       // Longitude GPS (si géolocalisation active)
 ```
 
-> `$settings` est injecté par `WidgetManager::callWidget()`. Il contient les valeurs de la table `widget_settings` pour ce widget, plus les coordonnées GPS préfixées par `_`.
+> `$settings` est injecté par `WidgetManager::callWidget()`. Contient les valeurs de `widget_settings` + les coordonnées GPS préfixées `_`.
 
 ### Appels HTTP
 
@@ -463,8 +754,6 @@ $response = @file_get_contents($url, false, $ctx);
 $data = json_decode($response ?: '{}', true);
 ```
 
-> C'est le pattern utilisé par Steam, Météo, Spotify et GitHub.
-
 **Avec cURL (headers custom, POST, cookies) :**
 
 ```php
@@ -477,7 +766,7 @@ curl_setopt_array($ch, [
 ]);
 $result = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-// Ne PAS appeler curl_close() — déprécié depuis PHP 8.5
+// NE PAS appeler curl_close() — déprécié depuis PHP 8.5
 ```
 
 ### Messages d'erreur et UI
@@ -491,54 +780,18 @@ Le message d'exception déclenche un comportement spécifique dans le frontend :
 | Autre | Message d'erreur brut |
 
 ```php
-// → Affiche le bouton "Configurer"
-throw new Exception('Widget non configuré : clé API manquante');
-
-// → Affiche le bouton "Connecter mon compte"
-throw new Exception('Session Spotify expirée — autorisation requise');
-
-// → Affiche le message tel quel
-throw new Exception('API Steam indisponible (HTTP 503)');
+throw new Exception('Widget non configuré : clé API manquante');     // → "Configurer"
+throw new Exception('Session Spotify expirée — autorisation requise'); // → "Connecter"
+throw new Exception('API Steam indisponible (HTTP 503)');             // → message brut
 ```
 
 ---
 
 ## Rendu frontend (widget.js)
 
-### Pattern complet
-
-```js
-window.DashboardWidgets = window.DashboardWidgets || {};
-
-window.DashboardWidgets['mon-widget'] = {
-
-    render(data, container) {
-        this._injectStyles();
-        // Générer le HTML dans container.innerHTML
-    },
-
-    _esc(str) {
-        return String(str ?? '')
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    },
-
-    _injectStyles() {
-        if (document.getElementById('mw-styles')) return;
-        const s = document.createElement('style');
-        s.id = 'mw-styles';
-        s.textContent = `/* styles ici */`;
-        document.head.appendChild(s);
-    },
-};
-```
-
 ### Re-render après mutation
 
-Pour les widgets interactifs (boutons, toggles), appeler l'API `mutate` puis re-rendre :
-
 ```js
-// Exemple tiré de widgets/s17/widget.js
 async _mutate(action, container) {
     const res = await fetch('api/widgets.php?action=mutate&widget=s17', {
         method: 'POST',
@@ -547,7 +800,6 @@ async _mutate(action, container) {
     });
     const json = await res.json();
     if (json.success) {
-        // Re-render avec les données mises à jour
         this.render({ ...currentData, ...json.data }, container);
     }
 },
@@ -558,12 +810,10 @@ async _mutate(action, container) {
 Pour des mises à jour côté client (barre de progression, compte à rebours) :
 
 ```js
-// Exemple tiré de widgets/spotify/widget.js
 render(data, container) {
     clearInterval(this._progressInterval);
     // ... rendu initial ...
 
-    // Barre de progression animée côté client
     this._progressInterval = setInterval(() => {
         progress = Math.min(progress + 1000, track.duration_ms);
         const fill = document.getElementById('sp-fill');
@@ -572,37 +822,17 @@ render(data, container) {
 },
 ```
 
-### Variables CSS du thème
-
-```css
-var(--bg-base)       /* #0f0f13 — fond principal */
-var(--bg-surface)    /* #16161d — fond cartes/modales */
-var(--bg-card)       /* rgba(255,255,255,0.04) — fond léger */
-var(--bg-hover)      /* rgba(255,255,255,0.07) — survol */
-var(--border)        /* rgba(255,255,255,0.08) — bordures */
-var(--accent)        /* #7c6af7 — violet principal */
-var(--accent-dim)    /* rgba(124,106,247,0.15) — violet transparent */
-var(--text)          /* #e2e2e8 — texte principal */
-var(--text-dim)      /* #9898a6 — texte secondaire */
-var(--muted)         /* #555560 — texte désactivé */
-var(--danger)        /* #f56565 — rouge erreur */
-var(--success)       /* #68d391 — vert succès */
-var(--radius)        /* 12px — border-radius standard */
-var(--radius-sm)     /* 8px — border-radius petit */
-var(--transition)    /* 180ms ease — transition par défaut */
-```
-
 ---
 
 ## Actions CRUD (mutate.php)
 
-Pour les widgets qui ont besoin d'écriture (compteurs, toggles, etc.).
+Pour les widgets interactifs (compteurs, toggles, listes).
 
 ### Variables disponibles
 
 ```php
 $input   // array — JSON décodé du body POST (ex: ['action' => 'watch'])
-$db      // Database — singleton SQLite (getSetting, setSetting, getSettings)
+$db      // Database — singleton SQLite
 ```
 
 ### Pattern
@@ -623,216 +853,59 @@ switch ($action) {
 }
 ```
 
-### Appel depuis widget.js
-
-```js
-const res = await fetch('api/widgets.php?action=mutate&widget=mon-widget', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ action: 'increment' }),
-});
-const json = await res.json();
-if (json.success) {
-    // json.data contient le tableau retourné par mutate.php
-}
-```
-
 > Après chaque mutation, le cache du widget est automatiquement supprimé par `api/widgets.php`.
 
 ---
 
-## Authentification OAuth2 (oauth.php)
+## Authentification OAuth2
 
-Pour les widgets qui nécessitent une connexion utilisateur (Spotify, Twitch, Google Calendar, YouTube).
-
-### Vue d'ensemble du flux
+### Flux standard (Spotify, Twitch)
 
 ```
-1. L'utilisateur clique "Connecter mon compte"
-   │
-   ▼
-2. Frontend ouvre : widgets/{id}/oauth.php
-   │
-   ▼
-3. oauth.php génère un state CSRF + redirige vers le provider
-   │  → Cookie HTTPOnly sécurisé avec le state
-   │  → Redirect vers https://accounts.spotify.com/authorize?...
-   │
-   ▼
-4. L'utilisateur autorise l'application sur le site du provider
-   │
-   ▼
-5. Le provider redirige vers : widgets/{id}/oauth.php?code=xxx&state=yyy
-   │
-   ▼
-6. oauth.php échange le code contre des tokens
-   │  → POST vers le token endpoint du provider
-   │  → Reçoit access_token + refresh_token
-   │
-   ▼
-7. Tokens stockés en SQLite (widget_settings)
-   │  → Cache du widget supprimé
-   │  → Redirect vers le dashboard
+1. Clic "Connecter mon compte" → ouvre widgets/{id}/oauth.php
+2. oauth.php génère un state CSRF (cookie HTTPOnly) → redirect provider
+3. L'utilisateur autorise sur le site du provider
+4. Provider redirige vers oauth.php?code=xxx&state=yyy
+5. oauth.php échange le code contre access_token + refresh_token
+6. Tokens stockés en SQLite → cache vidé → redirect vers /
 ```
 
-### Implémentation type
+### Variante Google (Calendar, YouTube)
 
-Basé sur le flux réel de `widgets/spotify/oauth.php` :
+Le domaine `.test` n'est pas accepté par Google. Solution : **Google OAuth Playground**.
 
-```php
-<?php
-require_once __DIR__ . '/../../config.php';
-
-$db = Database::getInstance();
-
-$clientId     = $db->getSetting('spotify', 'client_id');
-$clientSecret = $db->getSetting('spotify', 'client_secret');
-$redirectUri  = 'https://dashboard.test/widgets/spotify/oauth.php';
-$scopes       = 'user-read-currently-playing user-read-recently-played playlist-read-private';
-
-/* ---------- Étape 1 : Pas de code → rediriger vers le provider ---------- */
-
-if (!isset($_GET['code'])) {
-    // Générer un token CSRF
-    $state = bin2hex(random_bytes(16));
-
-    // Stocker dans un cookie sécurisé (expire dans 5 min)
-    setcookie('spotify_state', $state, [
-        'expires'  => time() + 300,
-        'path'     => '/',
-        'secure'   => true,
-        'httponly'  => true,
-        'samesite' => 'Lax',
-    ]);
-
-    // Rediriger vers Spotify
-    $params = http_build_query([
-        'client_id'     => $clientId,
-        'response_type' => 'code',
-        'redirect_uri'  => $redirectUri,
-        'scope'         => $scopes,
-        'state'         => $state,
-    ]);
-
-    header("Location: https://accounts.spotify.com/authorize?{$params}");
-    exit;
-}
-
-/* ---------- Étape 2 : Code reçu → échanger contre des tokens ---------- */
-
-// Vérification CSRF
-if (($_GET['state'] ?? '') !== ($_COOKIE['spotify_state'] ?? '')) {
-    die('État OAuth invalide (CSRF)');
-}
-
-// Échanger le code
-$credentials = base64_encode($clientId . ':' . $clientSecret);
-$tokenRes = httpPost('https://accounts.spotify.com/api/token', [
-    'grant_type'   => 'authorization_code',
-    'code'         => $_GET['code'],
-    'redirect_uri' => $redirectUri,
-], "Authorization: Basic {$credentials}");
-
-if (!isset($tokenRes['access_token'])) {
-    die('Échec de l\'authentification Spotify');
-}
-
-// Stocker les tokens en base
-$db->setSetting('spotify', 'access_token',  $tokenRes['access_token']);
-$db->setSetting('spotify', 'refresh_token', $tokenRes['refresh_token']);
-
-// Récupérer le profil utilisateur (optionnel, pour affichage)
-$profile = spotifyGet('https://api.spotify.com/v1/me', $tokenRes['access_token']);
-if (isset($profile['display_name'])) {
-    $db->setSetting('spotify', 'user_name', $profile['display_name']);
-}
-
-// Vider le cache et retourner au dashboard
-(new Cache())->deleteByPrefix('widget_spotify');
-header('Location: /');
-exit;
-```
+1. Redirect URI = `https://developers.google.com/oauthplayground`
+2. L'utilisateur récupère manuellement le refresh_token via OAuth Playground
+3. Le refresh_token est sauvegardé dans le panneau de configuration
 
 ### Rafraîchissement automatique des tokens
 
-Les access tokens OAuth2 expirent (1h pour Spotify/Google). Le `api.php` gère le refresh :
+Les access tokens expirent (1h pour Spotify/Google). Le `api.php` gère le refresh :
 
 ```php
-// Extrait de widgets/spotify/api.php
-function spotifyRefresh(string $clientId, string $clientSecret, string $refreshToken): array {
-    $credentials = base64_encode($clientId . ':' . $clientSecret);
-    $ctx = stream_context_create(['http' => [
-        'method'  => 'POST',
-        'header'  => "Content-Type: application/x-www-form-urlencoded\r\n"
-                   . "Authorization: Basic {$credentials}",
-        'content' => http_build_query([
-            'grant_type'    => 'refresh_token',
-            'refresh_token' => $refreshToken,
-        ]),
-        'timeout' => 10,
-    ]]);
-    return json_decode(@file_get_contents(
-        'https://accounts.spotify.com/api/token', false, $ctx
-    ) ?: '{}', true) ?? [];
-}
-
-// Appel API → si 401, refresh et retry
 $data = spotifyGet($url, $accessToken);
 
 if (needsRefresh($data)) {
     $new = spotifyRefresh($clientId, $clientSecret, $refreshToken);
     if (!isset($new['access_token'])) {
-        throw new Exception('Session Spotify expirée — autorisation requise');
+        throw new Exception('Session expirée — autorisation requise');
     }
-
-    // Mettre à jour les tokens en base
-    $db = Database::getInstance();
-    $db->setSetting('spotify', 'access_token',  $new['access_token']);
+    $db->setSetting('spotify', 'access_token', $new['access_token']);
     if (isset($new['refresh_token'])) {
         $db->setSetting('spotify', 'refresh_token', $new['refresh_token']);
     }
-
-    $accessToken = $new['access_token'];
-    $data = spotifyGet($url, $accessToken);
+    $data = spotifyGet($url, $new['access_token']);
 }
 ```
 
 ### Différences par provider
 
-| Provider | Auth Header | Scopes | Spécificités |
-|----------|-------------|--------|-------------|
-| **Spotify** | `Basic` (base64 client_id:secret) | `user-read-currently-playing`, `playlist-read-private` | Refresh token stable |
-| **Twitch** | `Client-ID` header | `user:read:follows` | Stocke aussi `user_id` et `user_name` |
-| **Google (Calendar)** | `Basic` (base64 client_id:secret) | `calendar.readonly` | Via OAuth Playground (redirect_uri = oauthplayground) |
-| **Google (YouTube)** | POST form body | `youtube.readonly` | Via OAuth Playground, filtre Shorts < 3min |
-
-### Clés nécessaires dans config.json
-
-Pour un widget OAuth2, ajouter les paramètres `client_id` et `client_secret` :
-
-```json
-{
-    "params": [
-        { "key": "client_id", "label": "Client ID", "type": "text", "required": true },
-        { "key": "client_secret", "label": "Client Secret", "type": "password", "required": true }
-    ]
-}
-```
-
-L'utilisateur les obtient en créant une application sur le portail développeur du provider (Spotify Developer Dashboard, Twitch Developer Console, Google Cloud Console).
-
-### Variante : OAuth via Google OAuth Playground
-
-Pour les widgets Google (Calendar, YouTube), le domaine `.test` n'est pas accepté comme redirect URI. La solution est d'utiliser Google OAuth Playground :
-
-1. Redirect URI dans `auth.php` et `callback.php` : `https://developers.google.com/oauthplayground`
-2. L'utilisateur va sur OAuth Playground, configure ses propres credentials, et récupère le refresh_token
-3. Le refresh_token est sauvegardé en SQLite via la console navigateur ou le panneau de configuration
-
-```php
-// auth.php — redirect URI OAuth Playground
-$redirectUri = 'https://developers.google.com/oauthplayground';
-```
+| Provider | Auth Header | Scopes clés | Spécificités |
+|----------|-------------|-------------|-------------|
+| **Spotify** | Basic (base64 id:secret) | `user-read-currently-playing` | Refresh token stable |
+| **Twitch** | Client-ID header | `user:read:follows` | Stocke user_id et user_name |
+| **Google Calendar** | Basic (base64 id:secret) | `calendar.readonly` | Via OAuth Playground |
+| **YouTube** | POST form body | `youtube.readonly` | Via OAuth Playground, filtre Shorts |
 
 ---
 
@@ -841,119 +914,247 @@ $redirectUri = 'https://developers.google.com/oauthplayground';
 Le cache est automatique — `WidgetManager::callWidget()` utilise `refresh_interval` du `config.json`.
 
 - **Clé de cache** : `widget_{id}` (ou `widget_{id}_{lat}_{lon}` avec GPS)
-- **TTL** : défini par `refresh_interval` en secondes dans `config.json`
+- **TTL** : défini par `refresh_interval` en secondes
+- **Stockage** : fichiers JSON dans `data/cache/`
 - **Invalidation automatique** :
-  - Quand les paramètres sont sauvegardés → `deleteByPrefix('widget_{id}')`
-  - Après chaque mutation → `deleteByPrefix('widget_{id}')`
-  - Après un refresh de token OAuth2 → `deleteByPrefix('widget_{id}')`
-
-Pour invalider manuellement :
-
-```php
-$cache = new Cache();
-$cache->deleteByPrefix('widget_mon-widget');
-```
-
-**Force-refresh côté frontend** : le bouton d'actualisation de chaque widget envoie `?force=1` qui vide le cache backend avant rechargement :
-
-```
-GET api/widgets.php?action=data&widget=meteo&force=1
-```
+  - Sauvegarde de paramètres → `deleteByPrefix('widget_{id}')`
+  - Après mutation → `deleteByPrefix('widget_{id}')`
+  - Après refresh de token OAuth2 → `deleteByPrefix('widget_{id}')`
+- **Force-refresh** : bouton de refresh envoie `?force=1` qui vide le cache avant l'appel
 
 ---
 
 ## Géolocalisation
 
-Si le widget a besoin de la position GPS (ex: Météo) :
+Le module `geolocation.js` demande la position GPS via `navigator.geolocation`. Les coordonnées sont transmises aux widgets via `?lat=xx&lon=yy`.
 
 ```php
-// api.php — les coordonnées sont injectées automatiquement dans $settings
+// Dans api.php — les coordonnées sont dans $settings
 $lat = $settings['_lat'] ?? null;
 $lon = $settings['_lon'] ?? null;
 
 if ($lat !== null && $lon !== null) {
-    // Utiliser les coordonnées GPS
     $url = "https://api.openweathermap.org/data/2.5/weather?lat={$lat}&lon={$lon}&appid={$apiKey}";
-} else {
-    // Fallback sur un paramètre configuré (ex: ville)
-    $city = $settings['city'] ?? 'Paris';
-    $url = "https://api.openweathermap.org/data/2.5/weather?q={$city}&appid={$apiKey}";
 }
 ```
 
-> Les coords sont arrondies à 0.01° dans la clé de cache pour éviter d'invalider le cache à chaque micro-déplacement.
+> Les coordonnées sont arrondies à 0.01° dans la clé de cache pour éviter d'invalider le cache à chaque micro-déplacement.
 
 ---
 
-## Base de données
+## Système d'onglets
 
-### Tables
+### Principe
 
-**`widget_settings`** — Paramètres par widget (clé/valeur)
+Le dashboard supporte plusieurs pages (onglets). Chaque onglet a son propre layout de widgets (quels widgets sont activés, dans quel ordre, quelle taille).
 
-```sql
-widget_id TEXT, key TEXT, value TEXT
--- UNIQUE(widget_id, key)
+### Table `dashboard_tabs`
+
+L'onglet `id=1` ("Accueil") est créé automatiquement et ne peut pas être supprimé.
+
+### Frontend (tabs.js)
+
+- `_loadTabs()` — charge les onglets depuis l'API
+- `_renderTabBar()` — rend la barre d'onglets avec bouton `+` (visible en mode édition) et bouton `×` (sauf sur Accueil)
+- `_switchTab(tabId)` — anime la sortie des cartes, recharge les widgets, redémarre l'auto-refresh
+- `_createTab()` — prompt pour le nom, POST vers l'API
+- Clic droit en mode édition → menu contextuel (renommer / supprimer)
+- Onglet courant sauvé en `localStorage('db_current_tab')`
+
+### Impact sur l'API
+
+Toutes les actions layout-related acceptent `&tab=N` :
+- `?action=list&tab=2` — widgets de l'onglet 2
+- `?action=layout&tab=2` — sauvegarder les positions de l'onglet 2
+- `?action=size&widget=steam&tab=2` — taille dans l'onglet 2
+
+---
+
+## Auto-refresh intelligent
+
+### Principe
+
+Les widgets se rafraîchissent automatiquement selon leur `refresh_interval`, mais **uniquement s'ils sont visibles** à l'écran. Un widget hors du viewport ne consomme pas de bande passante.
+
+### Implémentation (autorefresh.js)
+
+- `IntersectionObserver` avec seuil 10% sur chaque `.widget-card`
+- `setTimeout` individuel par widget (pas d'intervalle global)
+- Quand un widget entre dans le viewport :
+  - Si `elapsed >= refresh_interval` → refresh immédiat
+  - Sinon → programme un timer pour le temps restant
+- Quand un widget sort du viewport → annule son timer
+- Quand la fenêtre perd le focus (`document.visibilitychange`) → pause tous les timers
+- Quand la fenêtre reprend le focus → reprend uniquement les widgets visibles
+- Refresh manuel (bouton) → reset le timer de ce widget
+
+### Intégration
+
+- `widgets.js` appelle `_observeWidget(card)` après le mount
+- `tabs.js` appelle `_stopAllAutoRefresh()` avant un switch et `_restartAutoRefresh()` après
+- `panels.js` appelle `_unobserveWidget(id)` quand un widget est désactivé
+
+---
+
+## Animations
+
+### Keyframes (card.css)
+
+```css
+@keyframes widget-enter {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes widget-exit {
+    from { opacity: 1; transform: translateY(0);    }
+    to   { opacity: 0; transform: translateY(-8px); }
+}
+
+.widget-card--entering { animation: widget-enter 280ms ease both; }
+.widget-card--exiting  { animation: widget-exit  200ms ease both; pointer-events: none; }
 ```
 
-**`widget_layout`** — Position et état d'affichage
+### Comportement
 
-```sql
-widget_id TEXT UNIQUE, position INTEGER, enabled INTEGER, size TEXT
+| Événement | Animation | Stagger |
+|-----------|-----------|---------|
+| Mount (chargement initial) | `widget-enter` 280ms | 60ms entre chaque carte |
+| Tab switch (sortie) | `widget-exit` 200ms | 30ms entre chaque carte |
+| Tab switch (entrée) | `widget-enter` 280ms | 60ms entre chaque carte |
+| Toggle widget off | `widget-exit` 200ms | — |
+
+### Accessibilité
+
+```css
+@media (prefers-reduced-motion: reduce) {
+    .widget-card--entering, .widget-card--exiting {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+    }
+}
 ```
 
-### Accès depuis mutate.php
+---
+
+## Notifications
+
+### Principe
+
+Les widgets peuvent émettre des notifications. Le système gère les toasts (en bas à droite), un dropdown dans le header, et les notifications desktop du navigateur.
+
+### Stockage
+
+- `localStorage('db_notifications')` — tableau JSON, max 50 entrées
+- Pas de table DB (les notifs sont éphémères)
+
+### Émission (côté widget)
+
+Dans `api.php`, retourner une clé `_notifications` :
 
 ```php
-$db->getSetting('mon-widget', 'counter');       // Lire une valeur
-$db->setSetting('mon-widget', 'counter', 42);   // Écrire une valeur
-$db->getSettings('mon-widget');                  // Tout lire (array associatif)
+return [
+    'streams' => [...],
+    '_notifications' => [
+        ['id' => 'live_streamer1', 'title' => 'StreamerName est en live !', 'message' => 'Joue à Elden Ring'],
+    ],
+];
 ```
 
-> `$db` n'est **pas** disponible dans `api.php` — seul `$settings` est injecté. Utiliser `mutate.php` pour les écritures.
+### Déduplication
+
+Chaque notification a un ID composite `{widgetId}_{notif.id}`. Les doublons sont ignorés.
+
+### Desktop notifications
+
+Permission demandée au premier clic sur le bouton notifications (pas au chargement). Requiert HTTPS.
 
 ---
 
-## CSS & JS modulaire
+## Raccourcis clavier
 
-### CSS
+| Touche | Action |
+|--------|--------|
+| `E` | Toggle mode édition |
+| `F` | Toggle plein écran |
+| `R` | Rafraîchir tous les widgets |
+| `?` | Afficher/masquer l'overlay d'aide |
+| `Escape` | Fermer modale, drawer, dropdown, aide |
 
-8 fichiers dans `assets/css/`, chargés en ordre dans `index.php` :
+Ignorés quand le focus est dans `input`, `textarea`, `select`, ou un élément `contentEditable`.
 
-1. `tokens.css` — variables `:root`, reset, body
-2. `header.css` — header et ses sous-composants
-3. `grid.css` — grille et tailles de widgets
-4. `card.css` — carte widget et ses états
-5. `modal.css` — modale et formulaire
-6. `drawers.css` — panneaux latéraux
-7. `fullscreen.css` — mode plein écran
-8. `utilities.css` — classes utilitaires, responsive
+---
 
-### JS
+## Import / Export
 
-L'objet `Dashboard` est défini dans `dashboard.js`. Chaque module ajoute ses méthodes via `Object.assign()` :
+### Export
 
-```js
-// modules/monmodule.js
-Object.assign(Dashboard, {
-    maMethode() { ... },
-});
+`GET api/widgets.php?action=export` → fichier JSON téléchargé.
+
+Format v2 :
+```json
+{
+    "version": 2,
+    "exported_at": "2026-02-22T...",
+    "settings": { "steam": { "api_key": "..." }, ... },
+    "layout": [ { "widget_id": "steam", "tab_id": 1, "position": 0, "enabled": 1, "size": "normal" } ],
+    "tabs": [ { "id": 1, "name": "Accueil", "position": 0 } ]
+}
 ```
 
-Les modules sont chargés en ordre dans `index.php` (après `dashboard.js`, avant `DOMContentLoaded`).
+> Le fichier contient les clés API en clair.
+
+### Import
+
+`POST api/widgets.php?action=import` avec le JSON en body. Restaure tout et vide le cache.
+
+Accessible via le Config Panel (boutons Exporter / Importer).
+
+---
+
+## PWA (Progressive Web App)
+
+### Manifest (`manifest.json`)
+
+- Display : `standalone` (app plein écran sans barre d'adresse)
+- Thème : violet (#7c6af7) sur fond sombre (#0f0f13)
+- Icônes : 192x192 et 512x512 (maskable)
+
+### Service Worker (`service-worker.js`)
+
+| Pattern | Stratégie | Fallback |
+|---------|-----------|----------|
+| `/api/*` | Network-only | JSON `{success: false, error: "Hors ligne"}` |
+| `/widgets/*.js` | Network-first | Cache |
+| Google Fonts | Cache-first | Network |
+| Assets shell (CSS, JS) | Stale-while-revalidate | `offline.html` |
+
+Pour déployer une nouvelle version des assets, incrémenter `CACHE_NAME` dans `service-worker.js` (ex: `dashboard-shell-v1` → `v2`).
+
+### Enregistrement
+
+```html
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js');
+}
+</script>
+```
 
 ---
 
 ## Conventions
 
 1. **Clés API** : toujours en SQLite (`widget_settings`), jamais dans le code
-2. **Préfixe CSS** : unique par widget (2-3 lettres, ex: `st-` pour steam, `sp-` pour spotify)
+2. **Préfixe CSS** : unique par widget (2-3 lettres, ex: `st-` pour steam)
 3. **Échappement HTML** : obligatoire pour toute donnée affichée (`_esc()`)
 4. **Pas de `echo`** dans `api.php` : retourner un tableau avec `return [...]`
 5. **Pas de `curl_close()`** : déprécié depuis PHP 8.5
-6. **Cache** : ne pas contourner le cache du `WidgetManager` — modifier `refresh_interval` dans `config.json`
+6. **Cache** : ne pas contourner le cache du `WidgetManager` — modifier `refresh_interval`
 7. **Erreurs claires** : les messages d'exception sont affichés à l'utilisateur
 8. **Pas de framework** : ni côté PHP, ni côté JS — garder le projet léger
+9. **Tab-aware** : les appels layout et size doivent inclure `&tab=N`
+10. **Notifications** : utiliser des IDs stables pour la déduplication
 
 ---
 
@@ -961,13 +1162,10 @@ Les modules sont chargés en ordre dans `index.php` (après `dashboard.js`, avan
 
 ### Widget simple avec clé API — Steam
 
-**`widgets/steam/config.json`** (extrait) :
-
+**`widgets/steam/config.json`** :
 ```json
 {
-    "id": "steam",
-    "name": "Steam",
-    "icon": "<svg ...>",
+    "id": "steam", "name": "Steam", "icon": "<svg ...>",
     "params": [
         { "key": "api_key", "label": "Clé API Steam", "type": "password", "required": true },
         { "key": "steam_id", "label": "Steam ID (64 bits)", "type": "text", "required": true }
@@ -976,324 +1174,39 @@ Les modules sont chargés en ordre dans `index.php` (après `dashboard.js`, avan
 }
 ```
 
-**`widgets/steam/api.php`** (extrait) :
-
+**`widgets/steam/api.php`** :
 ```php
 $apiKey  = $settings['api_key']  ?? null;
 $steamId = $settings['steam_id'] ?? null;
-
 if (!$apiKey || !$steamId) {
     throw new Exception('Widget non configuré : clé API ou Steam ID manquant');
 }
-
-// Appels API avec timeout
 $ctx = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]);
-
-$profileUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
-            . "?key={$apiKey}&steamids={$steamId}";
-$profileRes = json_decode(@file_get_contents($profileUrl, false, $ctx) ?: '{}', true);
-$player = $profileRes['response']['players'][0] ?? null;
-
-if (!$player) {
-    throw new Exception('Profil Steam introuvable');
-}
-
-return [
-    'name'       => $player['personaname'],
-    'avatar'     => $player['avatarfull'],
-    'status'     => $statusLabel,
-    'profile_url' => $player['profileurl'],
-    'games'      => $recentGames,  // tableau des jeux récents
-];
+$url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key={$apiKey}&steamids={$steamId}";
+$player = json_decode(@file_get_contents($url, false, $ctx) ?: '{}', true)['response']['players'][0] ?? null;
+if (!$player) throw new Exception('Profil Steam introuvable');
+return ['name' => $player['personaname'], 'avatar' => $player['avatarfull'], ...];
 ```
-
-**`widgets/steam/widget.js`** (extrait) :
-
-```js
-window.DashboardWidgets.steam = {
-    render(data, container) {
-        this._injectStyles();
-
-        container.innerHTML = `
-            <div class="st-profile">
-                <a href="${this._esc(data.profile_url)}" target="_blank">
-                    <img class="st-avatar" src="${this._esc(data.avatar)}">
-                </a>
-                <div class="st-profile-info">
-                    <a class="st-name" href="${this._esc(data.profile_url)}">
-                        ${this._esc(data.name)}
-                    </a>
-                    <div class="st-status">${this._esc(data.status)}</div>
-                </div>
-            </div>
-            ${this._renderGames(data.games)}`;
-    },
-
-    _renderGames(games) {
-        if (!games?.length) return '';
-        return `<div class="st-games">${
-            games.map(g => `
-                <a class="st-game" href="${this._esc(g.url)}">
-                    <img src="${this._esc(g.image)}" alt="">
-                    <span class="st-game-name">${this._esc(g.name)}</span>
-                    <span class="st-game-time">${this._fmtHours(g.playtime_2weeks)}</span>
-                </a>`
-            ).join('')
-        }</div>`;
-    },
-
-    _fmtHours(minutes) {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-        return h > 0 ? `${h}h${m > 0 ? m : ''}` : `${m}min`;
-    },
-    // ... _esc(), _injectStyles()
-};
-```
-
----
-
-### Widget avec géolocalisation — Météo
-
-**`widgets/meteo/api.php`** (extrait) :
-
-```php
-$apiKey = $settings['api_key'] ?? null;
-$lat    = $settings['_lat']    ?? null;   // Injecté depuis le navigateur
-$lon    = $settings['_lon']    ?? null;
-$city   = $settings['city']    ?? null;   // Fallback si pas de GPS
-
-if (!$apiKey) {
-    throw new Exception('Widget non configuré : clé API manquante');
-}
-
-// Priorité : GPS > ville
-if ($lat !== null && $lon !== null) {
-    $url = sprintf(
-        'https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s&units=metric&lang=fr',
-        $lat, $lon, urlencode($apiKey)
-    );
-} elseif ($city) {
-    $url = sprintf(
-        'https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=fr',
-        urlencode($city), urlencode($apiKey)
-    );
-} else {
-    throw new Exception('Widget non configuré : activez la géolocalisation ou renseignez une ville');
-}
-
-// Météo actuelle + prévisions 5 jours (2 appels)
-$current  = json_decode(@file_get_contents($url, false, $ctx) ?: '{}', true);
-$forecast = json_decode(@file_get_contents($forecastUrl, false, $ctx) ?: '{}', true);
-
-return [
-    'city'     => $current['name'],
-    'temp'     => (int) round($current['main']['temp']),
-    'icon'     => $current['weather'][0]['icon'],
-    'forecast' => $dailyForecast,  // tableau des jours suivants
-];
-```
-
----
-
-### Widget avec OAuth2 et refresh — Spotify
-
-**`widgets/spotify/api.php`** (extrait) :
-
-```php
-$clientId     = $settings['client_id']     ?? null;
-$clientSecret = $settings['client_secret'] ?? null;
-$accessToken  = $settings['access_token']  ?? null;
-$refreshToken = $settings['refresh_token'] ?? null;
-
-// Pas de tokens → l'utilisateur doit se connecter
-if (!$accessToken) {
-    throw new Exception('Connectez votre compte Spotify — autorisation requise');
-}
-
-// Appel API
-$current = spotifyGet('https://api.spotify.com/v1/me/player/currently-playing', $accessToken);
-
-// Token expiré ? → refresh automatique
-if (needsRefresh($current)) {
-    $new = spotifyRefresh($clientId, $clientSecret, $refreshToken);
-    if (!isset($new['access_token'])) {
-        throw new Exception('Session Spotify expirée — autorisation requise');
-    }
-    $db = Database::getInstance();
-    $db->setSetting('spotify', 'access_token', $new['access_token']);
-    if (isset($new['refresh_token'])) {
-        $db->setSetting('spotify', 'refresh_token', $new['refresh_token']);
-    }
-    $accessToken = $new['access_token'];
-    $current = spotifyGet('https://api.spotify.com/v1/me/player/currently-playing', $accessToken);
-}
-
-return [
-    'is_playing'  => !empty($current['is_playing']),
-    'now_playing' => isset($current['item']) ? formatTrack($current['item']) : null,
-    'recent'      => $recentTracks,
-];
-```
-
----
 
 ### Widget avec mutations — Studio 17
 
-**`widgets/s17/api.php`** — Calcul basé sur la date, sans API externe :
+`widgets/s17/mutate.php` — 4 actions (start, watch, unwatch, cancel) qui modifient `current_episode` et `episode_in_progress` dans `widget_settings`.
 
+### Widget avec notifications — Twitch
+
+`widgets/twitch/api.php` retourne `_notifications` avec les streams live :
 ```php
-$anchorDate  = $settings['ep_anchor_date']  ?? '';
-$anchorCount = (int) ($settings['ep_anchor_count'] ?? 0);
-$releaseHour = (int) ($settings['ep_release_hour'] ?? 10);
-$currentEp   = (int) ($settings['current_episode']     ?? 0);
-$inProgress  = (bool) ($settings['episode_in_progress'] ?? false);
-
-// Calculer le nombre total d'épisodes depuis la date d'ancrage
-$tz     = new DateTimeZone('Europe/Paris');
-$anchor = new DateTime($anchorDate . ' ' . sprintf('%02d', $releaseHour) . ':00:00', $tz);
-$now    = new DateTime('now', $tz);
-
-$additional = 0;
-$cursor = clone $anchor;
-$cursor->modify('+7 days');
-while ($cursor <= $now) {
-    $additional++;
-    $cursor->modify('+7 days');
-}
-
-$epTotal = $anchorCount + $additional;
-
-return [
-    'current_ep'      => $currentEp,
-    'ep_total'        => $epTotal,
-    'behind'          => max(0, $epTotal - $currentEp),
-    'in_progress'     => $inProgress,
-    'next_release_ts' => $nextRelease->getTimestamp(),
-];
+'_notifications' => array_map(fn($s) => [
+    'id'      => 'live_' . $s['user_login'],
+    'title'   => $s['user_name'] . ' est en live !',
+    'message' => $s['game_name'],
+], $liveStreams),
 ```
 
-**`widgets/s17/mutate.php`** — 4 actions possibles :
+### Widget local sans API — Colis
 
-```php
-$action     = $input['action'] ?? '';
-$current    = (int) ($db->getSetting('s17', 'current_episode')     ?? 0);
-$inProgress = (int) ($db->getSetting('s17', 'episode_in_progress') ?? 0);
+`widgets/parcels/api.php` lit `tracking_list` depuis SQLite. `widgets/parcels/mutate.php` gère add/remove/status. Détection automatique du transporteur par regex sur le numéro de suivi.
 
-switch ($action) {
-    case 'start':                           // Commence un épisode
-        $inProgress = 1;
-        break;
-    case 'watch':                           // Termine un épisode → +1
-        $current++;
-        $inProgress = 0;
-        break;
-    case 'unwatch':                         // Annule le dernier → -1
-        if ($current > 0) $current--;
-        $inProgress = 0;
-        break;
-    case 'cancel':                          // Annule le visionnage en cours
-        $inProgress = 0;
-        break;
-    default:
-        throw new Exception('Action inconnue');
-}
+### Widget OAuth2 via Google Playground — YouTube
 
-$db->setSetting('s17', 'current_episode', $current);
-$db->setSetting('s17', 'episode_in_progress', $inProgress);
-
-return ['current_ep' => $current, 'in_progress' => (bool) $inProgress];
-```
-
----
-
-### Widget OAuth2 via Google OAuth Playground — YouTube
-
-Pour les widgets Google (Calendar, YouTube), le redirect URI est `https://developers.google.com/oauthplayground` car le domaine `.test` local n'est pas accepté par Google.
-
-**`widgets/youtube/auth.php`** — Redirection vers Google OAuth :
-
-```php
-$redirectUri = 'https://developers.google.com/oauthplayground';
-
-$params = http_build_query([
-    'client_id'     => $clientId,
-    'redirect_uri'  => $redirectUri,
-    'response_type' => 'code',
-    'scope'         => 'https://www.googleapis.com/auth/youtube.readonly',
-    'access_type'   => 'offline',
-    'prompt'        => 'consent',
-]);
-
-header('Location: https://accounts.google.com/o/oauth2/v2/auth?' . $params);
-```
-
-> L'utilisateur récupère manuellement le refresh_token via OAuth Playground, puis le sauvegarde via la console navigateur.
-
-**`widgets/youtube/api.php`** — Points clés :
-
-```php
-// Limiter le nombre de chaînes (éviter timeout 30s)
-$maxChannels = 25;
-$subs = array_slice($subs, 0, $maxChannels);
-
-// Upload playlist : remplacer "UC" par "UU" dans le channel ID
-$playlistId = 'UU' . substr($channelId, 2);
-
-// Filtrer les Shorts : #shorts dans le titre OU durée < 3 minutes
-foreach ($allVideos as $v) {
-    if (preg_match('/#shorts?\b/i', $v['title'])) {
-        $shortIds[] = $v['id'];
-    }
-}
-
-// Durée via videos.list (par batch de 50)
-foreach (array_chunk($videoIds, 50) as $chunk) {
-    $url = 'https://www.googleapis.com/youtube/v3/videos'
-         . '?part=contentDetails&id=' . implode(',', $chunk);
-    // ... parse ISO 8601 duration, filter < 180s
-}
-```
-
----
-
-### Widget local avec mutate — Colis
-
-Widget sans API externe : les données sont stockées localement en SQLite.
-
-**`widgets/parcels/api.php`** — Suivi local avec liens transporteurs :
-
-```php
-// Transporteurs avec URLs de suivi
-$carriers = [
-    'colissimo'    => ['name' => 'Colissimo',    'url' => 'https://www.laposte.fr/outils/suivre-vos-envois?code={number}'],
-    'chronopost'   => ['name' => 'Chronopost',   'url' => 'https://www.chronopost.fr/tracking-no-powerful/tracking?listeNumerosLT={number}'],
-    'ups'          => ['name' => 'UPS',          'url' => 'https://www.ups.com/track?tracknum={number}'],
-    // ...
-];
-
-// Liste des colis depuis SQLite
-$trackingList = json_decode($db->getSetting('parcels', 'tracking_list') ?: '[]', true);
-
-return [
-    'parcels'  => $trackingList,
-    'carriers' => array_map(fn($c) => $c['name'], $carriers),
-    'count'    => count($trackingList),
-];
-```
-
-**`widgets/parcels/mutate.php`** — Détection automatique du transporteur :
-
-```php
-function detectCarrier(string $number): string {
-    if (preg_match('/^(6A|8R|C[A-Z])/i', $number)) return 'colissimo';
-    if (preg_match('/^1Z/i', $number))               return 'ups';
-    if (preg_match('/^\d{12,15}$/', $number))         return 'fedex';
-    if (preg_match('/^(JD|JJD)/i', $number))          return 'dhl';
-    if (preg_match('/^\d{8}$/', $number))              return 'mondialrelay';
-    // ...
-    return 'autre';
-}
-
-// Actions : add, remove, status (changement manuel)
-```
+Redirect URI = `https://developers.google.com/oauthplayground`. Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes pour éviter le timeout de 30s.
