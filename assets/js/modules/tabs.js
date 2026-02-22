@@ -25,14 +25,19 @@ Object.assign(Dashboard, {
         const bar = document.getElementById('tab-bar');
         if (!bar) return;
 
-        bar.innerHTML = this._tabs.map(t => `
-            <button class="tab-btn${t.id === this._currentTab ? ' active' : ''}"
-                    data-tab-id="${t.id}">${this._escHtml(t.name)}</button>`
-        ).join('') + '<button class="tab-btn tab-btn-add" id="tab-add" title="Nouvel onglet">+</button>';
+        bar.innerHTML = this._tabs.map(t => {
+            const closeBtn = t.id !== 1
+                ? `<span class="tab-btn-close" data-tab-close="${t.id}" title="Supprimer">×</span>`
+                : '';
+            return `<button class="tab-btn${t.id === this._currentTab ? ' active' : ''}"
+                    data-tab-id="${t.id}">${this._escHtml(t.name)}${closeBtn}</button>`;
+        }).join('') + '<button class="tab-btn tab-btn-add" id="tab-add" title="Nouvel onglet">+</button>';
 
         // Clic sur un onglet
         bar.querySelectorAll('[data-tab-id]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                // Ignorer si clic sur le bouton ×
+                if (e.target.classList.contains('tab-btn-close')) return;
                 this._switchTab(+btn.dataset.tabId);
             });
 
@@ -41,6 +46,28 @@ Object.assign(Dashboard, {
                 if (!this._editMode) return;
                 e.preventDefault();
                 this._showTabContext(+btn.dataset.tabId, e.clientX, e.clientY);
+            });
+        });
+
+        // Boutons × de suppression
+        bar.querySelectorAll('[data-tab-close]').forEach(closeBtn => {
+            closeBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const tabId = +closeBtn.dataset.tabClose;
+                const tab = this._tabs.find(t => t.id === tabId);
+                if (!tab || tabId === 1) return;
+                if (!confirm(`Supprimer l'onglet « ${tab.name} » et ses widgets ?`)) return;
+                await fetch('api/widgets.php?action=tab-delete', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ id: tabId }),
+                });
+                await this._loadTabs();
+                if (this._currentTab === tabId) {
+                    this._switchTab(1);
+                } else {
+                    this._renderTabBar();
+                }
             });
         });
 

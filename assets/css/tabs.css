@@ -17,7 +17,12 @@
 .tab-bar::-webkit-scrollbar { display: none; }
 
 .tab-btn {
-    padding: 6px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 18px;
+    min-width: 80px;
+    justify-content: center;
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
@@ -42,9 +47,31 @@
     border-bottom-color: var(--accent);
 }
 
+/* Bouton × de suppression sur l'onglet */
+.tab-btn-close {
+    display: none;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    margin-left: 2px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition), background var(--transition), color var(--transition);
+}
+.edit-mode .tab-btn-close { display: inline-flex; align-items: center; justify-content: center; }
+.tab-btn:hover .tab-btn-close { opacity: 0.7; }
+.tab-btn-close:hover { opacity: 1 !important; background: rgba(255,255,255,0.1); color: var(--danger); }
+
 .tab-btn-add {
     color: var(--muted);
     font-size: 16px;
+    min-width: 30px;
     width: 30px;
     padding: 4px 0;
     display: none;
