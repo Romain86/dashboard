@@ -47,8 +47,8 @@ Object.assign(Dashboard, {
     },
 
     /** Charge les données et rend le contenu d'un widget. */
-    async _renderWidgetContent(widgetId, contentEl, force = false) {
-        this._showSkeleton(contentEl);
+    async _renderWidgetContent(widgetId, contentEl, force = false, silent = false) {
+        if (!silent) this._showSkeleton(contentEl);
 
         try {
             const { data, cache_ts } = await this._fetchWidgetData(widgetId, force);

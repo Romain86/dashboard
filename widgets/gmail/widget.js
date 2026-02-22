@@ -2,6 +2,20 @@ window.DashboardWidgets = window.DashboardWidgets || {};
 
 window.DashboardWidgets.gmail = {
 
+    _APPS: {
+        outlook:     { label: 'Outlook',      url: 'ms-outlook://emails/' },
+        outlook_web: { label: 'Outlook Web',  url: 'https://outlook.live.com/mail/' },
+        gmail:       { label: 'Gmail',        url: 'https://mail.google.com' },
+    },
+
+    _getApp() {
+        return localStorage.getItem('gmail-widget-app') || 'outlook';
+    },
+
+    _setApp(key) {
+        localStorage.setItem('gmail-widget-app', key);
+    },
+
     render(data, container) {
         this._injectStyles();
 
@@ -22,16 +36,30 @@ window.DashboardWidgets.gmail = {
             return;
         }
 
+        const currentApp = this._getApp();
+        const app = this._APPS[currentApp] || this._APPS.outlook;
+
         container.innerHTML = `
             <div class="gm-header-bar">
                 ${unread > 0 ? `<span class="gm-unread-badge">${unread} non lu${unread > 1 ? 's' : ''}</span>` : '<span class="gm-all-read">Tout lu</span>'}
-                <a class="gm-open-link" href="https://mail.google.com" target="_blank">Ouvrir Gmail</a>
+                <div class="gm-actions">
+                    <a class="gm-open-link" href="${app.url}" target="_blank">Ouvrir ${app.label}</a>
+                    <div class="gm-app-picker">
+                        <button class="gm-app-btn" title="Changer d'application mail">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="gm-app-menu hidden">
+                            ${Object.entries(this._APPS).map(([key, a]) => `
+                                <button class="gm-app-option${key === currentApp ? ' gm-app-active' : ''}" data-app="${key}">${a.label}</button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="gm-list">
                 ${emails.map(e => `
-                    <a class="gm-email${e.unread ? ' gm-email--unread' : ''}"
-                       href="mailto:${this._esc(e.from_email || '')}"
-                       title="${this._esc(e.subject)}">
+                    <div class="gm-email${e.unread ? ' gm-email--unread' : ''}"
+                         title="${this._esc(e.subject)}">
                         <div class="gm-email-dot">${e.unread ? '<span class="gm-dot"></span>' : ''}</div>
                         <div class="gm-email-body">
                             <div class="gm-email-top">
@@ -40,9 +68,29 @@ window.DashboardWidgets.gmail = {
                             </div>
                             <div class="gm-subject">${this._esc(e.subject)}</div>
                         </div>
-                    </a>
+                    </div>
                 `).join('')}
             </div>`;
+
+        // Toggle du menu
+        const btn = container.querySelector('.gm-app-btn');
+        const menu = container.querySelector('.gm-app-menu');
+        btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            menu.classList.toggle('hidden');
+        });
+
+        // Choix d'une app
+        menu.querySelectorAll('.gm-app-option').forEach(opt => {
+            opt.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                this._setApp(opt.dataset.app);
+                this.render(data, container);
+            });
+        });
+
+        // Fermer le menu au clic extérieur
+        document.addEventListener('click', () => menu.classList.add('hidden'), { once: true });
     },
 
     _relTime(ts) {
@@ -105,19 +153,10 @@ window.DashboardWidgets.gmail = {
                 border-bottom: 1px solid var(--border);
             }
 
-            .gm-unread-badge {
-                background: #EA4335;
-                color: #fff;
-                font-size: 11px;
-                font-weight: 700;
-                padding: 3px 8px;
-                border-radius: 10px;
-            }
-
-            .gm-all-read {
-                color: var(--success);
-                font-size: 12px;
-                font-weight: 500;
+            .gm-actions {
+                display: flex;
+                align-items: center;
+                gap: 4px;
             }
 
             .gm-open-link {
@@ -127,6 +166,61 @@ window.DashboardWidgets.gmail = {
                 transition: color var(--transition);
             }
             .gm-open-link:hover { color: var(--text); }
+
+            .gm-app-picker { position: relative; }
+
+            .gm-app-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 20px;
+                height: 20px;
+                border: none;
+                background: transparent;
+                color: var(--muted);
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background var(--transition), color var(--transition);
+            }
+            .gm-app-btn:hover {
+                background: var(--bg-hover);
+                color: var(--text);
+            }
+
+            .gm-app-menu {
+                position: absolute;
+                top: calc(100% + 4px);
+                right: 0;
+                background: var(--bg-surface);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+                z-index: 50;
+                overflow: hidden;
+                min-width: 120px;
+            }
+
+            .gm-app-option {
+                display: block;
+                width: 100%;
+                padding: 7px 12px;
+                border: none;
+                background: none;
+                color: var(--text-dim);
+                font-size: 12px;
+                font-family: inherit;
+                text-align: left;
+                cursor: pointer;
+                transition: background var(--transition), color var(--transition);
+            }
+            .gm-app-option:hover {
+                background: var(--bg-hover);
+                color: var(--text);
+            }
+            .gm-app-option.gm-app-active {
+                color: var(--accent);
+                font-weight: 600;
+            }
 
             .gm-list {
                 max-height: 340px;

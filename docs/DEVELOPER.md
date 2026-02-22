@@ -514,7 +514,7 @@ Chaque widget utilise un **préfixe unique** de 2-3 lettres pour éviter les col
 | Widget | Préfixe | Exemples |
 |--------|---------|----------|
 | Steam | `st-` | `.st-avatar`, `.st-game` |
-| Spotify | `sp-` | `.sp-track`, `.sp-fill` |
+| Spotify | `sp-` | `.sp-track`, `.sp-fill`, `.sp-ctrl-btn`, `.sp-ctrl-play` |
 | Météo | `meteo-` | `.meteo-grid`, `.meteo-aqi-badge` |
 | GitHub | `gh-` | `.gh-repo`, `.gh-calendar` |
 | YouTube | `yt-` | `.yt-channel`, `.yt-video` |
@@ -904,7 +904,7 @@ if (needsRefresh($data)) {
 
 | Provider | Auth Header | Scopes clés | Spécificités |
 |----------|-------------|-------------|-------------|
-| **Spotify** | Basic (base64 id:secret) | `user-read-currently-playing` | Refresh token stable |
+| **Spotify** | Basic (base64 id:secret) | `user-read-currently-playing`, `user-modify-playback-state`, `user-read-playback-state` | Refresh token stable, controles playback via `mutate.php` |
 | **Twitch** | Client-ID header | `user:read:follows` | Stocke user_id et user_name |
 | **Google Calendar** | Basic (base64 id:secret) | `calendar.readonly` | Via OAuth Playground |
 | **YouTube** | POST form body | `youtube.readonly` | Via OAuth Playground, filtre Shorts |

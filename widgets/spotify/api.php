@@ -81,6 +81,11 @@ $recentData = spotifyGet('https://api.spotify.com/v1/me/player/recently-played?l
 $recent = array_map(fn($item) => formatTrack($item['track']), $recentData['items'] ?? []);
 
 // -------------------------------------------------------
+// État du player (shuffle, device)
+// -------------------------------------------------------
+$player = spotifyGet('https://api.spotify.com/v1/me/player', $accessToken);
+
+// -------------------------------------------------------
 // Construction de la réponse
 // -------------------------------------------------------
 $isPlaying = !empty($current['is_playing']) && isset($current['item']);
@@ -95,10 +100,17 @@ if ($isPlaying) {
     ];
 }
 
+$disallows = $player['actions']['disallows'] ?? [];
+
 return [
-    'is_playing'  => $isPlaying,
-    'now_playing' => $nowPlaying,
-    'recent'      => $recent,
+    'is_playing'    => $isPlaying,
+    'now_playing'   => $nowPlaying,
+    'recent'        => $recent,
+    'shuffle_state' => $player['shuffle_state'] ?? false,
+    'device'        => isset($player['device']) ? $player['device']['name'] : null,
+    'has_device'    => !empty($player['device']),
+    'can_skip_prev' => empty($disallows['skipping_prev']),
+    'can_skip_next' => empty($disallows['skipping_next']),
 ];
 
 // -------------------------------------------------------

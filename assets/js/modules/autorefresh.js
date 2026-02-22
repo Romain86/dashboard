@@ -83,7 +83,7 @@ Object.assign(Dashboard, {
         const contentEl = card.querySelector('.widget-content');
         if (!contentEl) return;
 
-        await this._renderWidgetContent(widgetId, contentEl, false);
+        await this._renderWidgetContent(widgetId, contentEl, false, true);
         this._autoRefreshLastTs[widgetId] = Date.now();
 
         const interval = this._autoRefreshIntervals[widgetId];

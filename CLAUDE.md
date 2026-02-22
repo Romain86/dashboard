@@ -171,6 +171,7 @@ Enregistre un renderer : `window.DashboardWidgets['{id}'] = { render(data, conta
 - **Météo** : Inclut la qualité de l'air (AQI) via l'API Air Pollution (gratuite, même clé).
 - **YouTube** : OAuth2 via Google OAuth Playground. Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes.
 - **Colis** : Pas d'API externe. Détection automatique du transporteur par regex. Liens directs de suivi.
+- **Spotify** : Controles playback (play/pause, next, previous, restart, shuffle) via `mutate.php`. Scopes : `user-modify-playback-state`, `user-read-playback-state`. Refresh silencieux apres action (pas de skeleton). Boutons prev/next disabled selon `actions.disallows` de l'API.
 - **Twitch** : Émet des notifications (`_notifications`) quand un stream passe en live.
 - **Phone** : Lit les notifications depuis la base SQLite de Microsoft Phone Link. Auto-détection du chemin. Copie .db+.db-shm+.db-wal pour éviter le verrou. Groupement par app avec icônes emoji. Pas de données batterie (non stockées localement).
 

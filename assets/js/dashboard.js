@@ -26,7 +26,7 @@
  *   15. modules/panels.js
  * ============================================================ */
 
-const Dashboard = {
+const Dashboard = window.Dashboard = {
 
     /* ---- État interne ---- */
     _widgetList:    [],     // liste complète des widgets (issue de l'API)

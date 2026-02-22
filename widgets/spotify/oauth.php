@@ -18,7 +18,7 @@ $clientSecret = $db->getSetting('spotify', 'client_secret');
 
 $protocol    = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $redirectUri = $protocol . '://' . $_SERVER['HTTP_HOST'] . '/widgets/spotify/oauth.php';
-$scopes      = 'user-read-currently-playing user-read-recently-played user-top-read';
+$scopes      = 'user-read-currently-playing user-read-recently-played user-top-read user-read-playback-state user-modify-playback-state';
 
 // -------------------------------------------------------
 // Étape 2 : callback Spotify

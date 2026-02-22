@@ -32,7 +32,7 @@ Dashboard modulaire personnel avec des widgets indépendants, développé en PHP
 | Widget | Description | API | Refresh |
 |--------|-------------|-----|---------|
 | Météo | Prévisions 5 jours + qualité de l'air (AQI) | OpenWeatherMap | 10 min |
-| Spotify | Lecture en cours, playlists | Spotify (OAuth2) | 30 sec |
+| Spotify | Lecture en cours, controles playback, historique | Spotify (OAuth2) | 30 sec |
 | Steam | Statut en ligne, jeux récents | Steam Web API | 5 min |
 | Twitch | Streams suivis en direct + notifications | Twitch (OAuth2) | 1 min |
 | GitHub | Dépôts, activité, calendrier | GitHub API | 5 min |
