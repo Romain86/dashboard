@@ -1,0 +1,25 @@
+{
+    "id": "gmail",
+    "name": "Gmail",
+    "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\"><path d=\"M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z\" fill=\"#EA4335\"/><path d=\"M2 6l10 7 10-7\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/></svg>",
+    "description": "Emails non lus et messages récents",
+    "version": "1.0",
+    "params": [
+        { "key": "client_id", "label": "Client ID (Google Cloud)", "type": "text", "required": true },
+        { "key": "client_secret", "label": "Client Secret", "type": "password", "required": true },
+        { "key": "refresh_token", "label": "Refresh Token (OAuth Playground)", "type": "password", "required": true },
+        {
+            "key": "max_emails",
+            "label": "Nombre d'emails",
+            "type": "select",
+            "default": "10",
+            "options": [
+                { "value": "5",  "label": "5" },
+                { "value": "10", "label": "10" },
+                { "value": "15", "label": "15" },
+                { "value": "20", "label": "20" }
+            ]
+        }
+    ],
+    "refresh_interval": 300
+}

@@ -130,6 +130,7 @@ Object.assign(Dashboard, {
             'youtube':    ['rgba(255, 0,   0,   0.30)', 'rgba(255, 0,   0,   0.06)'],
             'parcels':    ['rgba(34,  197, 94,  0.30)', 'rgba(34,  197, 94,  0.06)'],
             'phone':      ['rgba(59,  130, 246, 0.30)', 'rgba(59,  130, 246, 0.06)'],
+            'gmail':      ['rgba(234, 67,  53,  0.30)', 'rgba(234, 67,  53,  0.06)'],
         };
         const [accent, accentBg] = _widgetAccents[widget.id] ?? ['rgba(124, 106, 247, 0.25)', 'rgba(124, 106, 247, 0.05)'];
         card.style.setProperty('--widget-accent',    accent);
