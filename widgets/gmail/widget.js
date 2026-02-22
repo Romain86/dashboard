@@ -30,8 +30,7 @@ window.DashboardWidgets.gmail = {
             <div class="gm-list">
                 ${emails.map(e => `
                     <a class="gm-email${e.unread ? ' gm-email--unread' : ''}"
-                       href="https://mail.google.com/mail/u/0/#inbox/${this._esc(e.id)}"
-                       target="_blank"
+                       href="mailto:${this._esc(e.from_email || '')}"
                        title="${this._esc(e.subject)}">
                         <div class="gm-email-dot">${e.unread ? '<span class="gm-dot"></span>' : ''}</div>
                         <div class="gm-email-body">

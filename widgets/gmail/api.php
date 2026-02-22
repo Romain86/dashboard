@@ -104,11 +104,15 @@ foreach ($messages as $msg) {
         $headers[$h['name']] = $h['value'];
     }
 
-    // Parser l'expéditeur (extraire le nom si possible)
-    $fromRaw = $headers['From'] ?? '';
-    $fromName = $fromRaw;
-    if (preg_match('/^"?(.+?)"?\s*<.+>$/', $fromRaw, $m)) {
-        $fromName = $m[1];
+    // Parser l'expéditeur (extraire le nom et l'adresse email)
+    $fromRaw   = $headers['From'] ?? '';
+    $fromName  = $fromRaw;
+    $fromEmail = '';
+    if (preg_match('/^"?(.+?)"?\s*<(.+?)>$/', $fromRaw, $m)) {
+        $fromName  = $m[1];
+        $fromEmail = $m[2];
+    } elseif (strpos($fromRaw, '@') !== false) {
+        $fromEmail = $fromRaw;
     }
 
     // Déterminer si non lu
@@ -116,11 +120,12 @@ foreach ($messages as $msg) {
     $unread = in_array('UNREAD', $labels);
 
     $emails[] = [
-        'id'      => $msgData['id'],
-        'from'    => $fromName,
-        'subject' => $headers['Subject'] ?? '(sans objet)',
-        'date'    => (int) floor(($msgData['internalDate'] ?? 0) / 1000),
-        'unread'  => $unread,
+        'id'         => $msgData['id'],
+        'from'       => $fromName,
+        'from_email' => $fromEmail,
+        'subject'    => $headers['Subject'] ?? '(sans objet)',
+        'date'       => (int) floor(($msgData['internalDate'] ?? 0) / 1000),
+        'unread'     => $unread,
     ];
 }
 

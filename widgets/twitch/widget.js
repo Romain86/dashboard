@@ -75,6 +75,8 @@ window.DashboardWidgets.twitch = {
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
+                max-height: 380px;
+                overflow-y: auto;
             }
 
             .twitch-stream {
