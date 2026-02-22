@@ -64,8 +64,7 @@
             <div class="header-btn-wrap">
                 <button id="btn-notif" class="header-btn" title="Notifications" aria-label="Notifications">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22c1.1 0 2-.9 2-2H10c0 1.1.9 2 2 2z"/>
-                        <path d="M18 16v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
                 </button>
                 <span id="notif-badge" class="notif-badge hidden">0</span>
