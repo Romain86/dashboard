@@ -19,11 +19,4 @@
 .hidden { display: none !important; }
 .muted  { color: var(--muted); }
 
-/* ---- Responsive (mobile < 640px) ---- */
-@media (max-width: 640px) {
-    .dashboard-header  { padding: 0 16px; height: 56px; }
-    .dashboard-title   { display: none; }
-    .clock-time        { font-size: 18px; }
-    .dashboard-main    { padding: 20px 16px; }
-    .widgets-grid      { grid-template-columns: 1fr; gap: 16px; }
-}
+/* ---- Responsive : voir responsive.css ---- */

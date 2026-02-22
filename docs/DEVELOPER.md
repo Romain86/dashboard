@@ -42,7 +42,7 @@ Documentation technique complète du projet. Ce guide permet à un développeur 
 | Base de données | SQLite via PDO |
 | Cache | Fichiers JSON avec TTL |
 | Frontend | JavaScript vanilla |
-| CSS | Vanilla CSS, modulaire (9 fichiers) |
+| CSS | Vanilla CSS, modulaire (10 fichiers) |
 | Serveur local | Herd (`https://dashboard.test/`) |
 | PWA | manifest.json + service worker |
 
@@ -472,7 +472,7 @@ Object.assign(Dashboard, {
 
 ## CSS modulaire et thème
 
-### 9 fichiers CSS, chargés en ordre dans `index.php`
+### 10 fichiers CSS, chargés en ordre dans `index.php`
 
 | # | Fichier | Rôle |
 |---|---------|------|
@@ -484,7 +484,8 @@ Object.assign(Dashboard, {
 | 6 | `drawers.css` | Widget Manager, Config Panel, section backup import/export |
 | 7 | `fullscreen.css` | Mode plein écran, auto-hide header |
 | 8 | `tabs.css` | Barre d'onglets, boutons tab, bouton +, bouton ×, menu contextuel |
-| 9 | `utilities.css` | Classes utilitaires, scrollbars, responsive breakpoints |
+| 9 | `utilities.css` | Classes utilitaires, scrollbars |
+| 10 | `responsive.css` | Responsive : breakpoints mobile (< 640px) et tablette (640-1024px) |
 
 ### Variables CSS du thème (tokens.css)
 
@@ -517,6 +518,7 @@ Chaque widget utilise un **préfixe unique** de 2-3 lettres pour éviter les col
 | Météo | `meteo-` | `.meteo-grid`, `.meteo-aqi-badge` |
 | GitHub | `gh-` | `.gh-repo`, `.gh-calendar` |
 | YouTube | `yt-` | `.yt-channel`, `.yt-video` |
+| Phone | `ph-` | `.ph-device`, `.ph-notif`, `.ph-group` |
 
 ---
 
@@ -1069,6 +1071,45 @@ Chaque notification a un ID composite `{widgetId}_{notif.id}`. Les doublons sont
 
 Permission demandée au premier clic sur le bouton notifications (pas au chargement). Requiert HTTPS.
 
+### Corrections du système de notifications
+
+Trois bugs corrigés dans le système de notifications :
+
+**1. Ordre d'initialisation (dashboard.js)**
+
+`_initNotifications()` est maintenant appelé AVANT le montage des widgets (`Promise.all(enabled.map(...))`). Sans cela, `_processWidgetNotifications()` traitait toutes les notifications existantes comme nouvelles au premier chargement, puisque `this._notifications` était encore vide.
+
+```js
+// dashboard.js — init()
+this._initNotifications();  // AVANT le montage
+await Promise.all(enabled.map(w => this._mountWidget(w)));
+```
+
+**2. Injection CSS anticipée (notifications.js)**
+
+`_notifInjectStyles()` est maintenant appelé dans `_initNotifications()` (en plus de `_showToast()`). Le dropdown de notifications n'avait pas de styles CSS si aucun toast n'avait encore été affiché.
+
+```js
+_initNotifications() {
+    this._notifInjectStyles();  // Injecter les styles immédiatement
+    // ...
+}
+```
+
+**3. Suppression des notifications en cache (api/widgets.php)**
+
+Le serveur compare le timestamp du cache avant et après l'appel `callWidget()`. Si les timestamps sont identiques (données issues du cache), la clé `_notifications` est supprimée de la réponse. Évite de re-déclencher les mêmes notifications à chaque render.
+
+```php
+$preCacheTs = $cache->getCachedAt($cacheKey);
+$data = $manager->callWidget($widgetId, $settings, $cache);
+$cacheTs = $cache->getCachedAt($cacheKey);
+
+if ($preCacheTs === $cacheTs && isset($data['_notifications'])) {
+    unset($data['_notifications']);
+}
+```
+
 ---
 
 ## Raccourcis clavier
@@ -1210,3 +1251,7 @@ return ['name' => $player['personaname'], 'avatar' => $player['avatarfull'], ...
 ### Widget OAuth2 via Google Playground — YouTube
 
 Redirect URI = `https://developers.google.com/oauthplayground`. Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes pour éviter le timeout de 30s.
+
+### Widget local sans API externe — Phone
+
+`widgets/phone/api.php` lit la base SQLite de Microsoft Phone Link (`%LOCALAPPDATA%\Packages\Microsoft.YourPhone_8wekyb3d8bbwe\LocalCache\Indexed\{GUID}\System\Database\notifications.db`). Copie les fichiers `.db`, `.db-shm` et `.db-wal` dans `data/cache/` pour contourner le verrou de Phone Link. Détecte automatiquement le sous-dossier GUID. Lit les métadonnées de l'appareil (nom, modèle, OS) depuis `DeviceMetadataStorage.json`. `widgets/phone/widget.js` groupe les notifications par application avec des icônes emoji (WhatsApp, YouTube, Discord, etc.). Pas de `params` requis (tableau vide dans `config.json`), pas d'auth, refresh 2 min.

@@ -41,7 +41,7 @@ dashboard/
 │   └── Database.php           # Singleton SQLite (3 tables)
 ├── assets/
 │   ├── icons/                 # Icônes PWA (192px, 512px)
-│   ├── css/                   # 9 fichiers CSS modulaires
+│   ├── css/                   # 10 fichiers CSS modulaires
 │   │   ├── tokens.css         # Variables CSS, reset, body
 │   │   ├── header.css         # Header, horloge, boutons
 │   │   ├── grid.css           # Grille, tailles, mode édition
@@ -50,7 +50,8 @@ dashboard/
 │   │   ├── drawers.css        # Widget Manager + Config Panel + backup
 │   │   ├── fullscreen.css     # Mode plein écran
 │   │   ├── tabs.css           # Barre d'onglets
-│   │   └── utilities.css      # Utilitaires, scrollbars, responsive
+│   │   ├── utilities.css      # Utilitaires, scrollbars
+│   │   └── responsive.css    # Breakpoints mobile + tablette
 │   └── js/
 │       ├── dashboard.js       # Core (état + init)
 │       └── modules/           # 14 modules JS
@@ -163,6 +164,7 @@ Enregistre un renderer : `window.DashboardWidgets['{id}'] = { render(data, conta
 | Studio 17 | — (calcul local) | — | 1h |
 | YouTube | YouTube Data API v3 | OAuth2 (OAuth Playground) | 10 min |
 | Colis | — (suivi local) | — | 1h |
+| Phone | Phone Link (SQLite locale) | — | 2 min |
 
 ### Notes spécifiques
 
@@ -170,6 +172,7 @@ Enregistre un renderer : `window.DashboardWidgets['{id}'] = { render(data, conta
 - **YouTube** : OAuth2 via Google OAuth Playground. Filtre automatique des Shorts (durée < 3min). Limite à 25 chaînes.
 - **Colis** : Pas d'API externe. Détection automatique du transporteur par regex. Liens directs de suivi.
 - **Twitch** : Émet des notifications (`_notifications`) quand un stream passe en live.
+- **Phone** : Lit les notifications depuis la base SQLite de Microsoft Phone Link. Auto-détection du chemin. Copie .db+.db-shm+.db-wal pour éviter le verrou. Groupement par app avec icônes emoji. Pas de données batterie (non stockées localement).
 
 ---
 

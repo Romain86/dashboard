@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="assets/css/fullscreen.css?v=<?= filemtime(__DIR__ . '/assets/css/fullscreen.css') ?>">
     <link rel="stylesheet" href="assets/css/tabs.css?v=<?= filemtime(__DIR__ . '/assets/css/tabs.css') ?>">
     <link rel="stylesheet" href="assets/css/utilities.css?v=<?= filemtime(__DIR__ . '/assets/css/utilities.css') ?>">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=<?= filemtime(__DIR__ . '/assets/css/responsive.css') ?>">
 </head>
 <body>
 
